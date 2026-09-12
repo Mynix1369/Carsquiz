@@ -1,10 +1,17 @@
-// Sistema de idiomas: inglés por defecto, español como alternativa. Se guarda en
-// localStorage para que se recuerde entre visitas. Los datos "de verdad" (marcas,
-// modelos, países) se guardan siempre en español en data.js como valor canónico;
-// aquí solo se traducen para mostrar en pantalla y para validar la respuesta cuando
-// el idioma activo es inglés.
+// Sistema de idiomas: se detecta el idioma del navegador la primera vez que se entra
+// (español si es de un país/idioma hispanohablante, inglés para cualquier otro) y a
+// partir de ahí se guarda en localStorage para que se recuerde entre visitas, aunque
+// el usuario cambie el idioma del navegador más adelante. Los datos "de verdad"
+// (marcas, modelos, países) se guardan siempre en español en data.js como valor
+// canónico; aquí solo se traducen para mostrar en pantalla y para validar la
+// respuesta cuando el idioma activo es inglés.
 
-let currentLang = localStorage.getItem("qc_lang") || "en";
+function detectBrowserLang(){
+  const primary = navigator.language || navigator.userLanguage || "";
+  return primary.toLowerCase().startsWith("es") ? "es" : "en";
+}
+
+let currentLang = localStorage.getItem("qc_lang") || detectBrowserLang();
 
 const STRINGS = {
   en: {
