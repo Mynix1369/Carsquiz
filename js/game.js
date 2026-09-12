@@ -243,6 +243,12 @@ function renderStimulus(q){
       <p class="hint-text">${t("soundHint")}</p>`;
     area.appendChild(box);
     document.getElementById("play-sound-btn").addEventListener("click", () => playCarSound(q.car));
+    if(q.car.credit){
+      const credit = document.createElement("p");
+      credit.className = "photo-credit";
+      credit.textContent = q.car.credit;
+      area.appendChild(credit);
+    }
     playCarSound(q.car);
     return;
   }
