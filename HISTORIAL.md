@@ -289,12 +289,11 @@ Efecto secundario del §9 (Fix 3): al crecer el ancho de `#app`, las miniaturas 
 
 ---
 
-## 14. Pendientes / temporales conocidos (actualizado 12 sept. 2026)
+## 14. Pendientes / temporales conocidos
 
-1. ~~Icono de Porsche en el menú~~ — **resuelto, ya no es "temporal"**: ver §20. El usuario decidió conscientemente mantenerlo tal cual (real, no placeholder de IA), argumentando que no hay anuncios (solo donación voluntaria) y que el modo Logos ya usa 100 marcas reales como mecánica central, así que un escudo más como icono de menú no es un salto de riesgo. Se quitó el comentario `<!-- TEMPORAL -->` de `index.html`.
-2. **Foto c100 (Rolls-Royce Phantom VI)** en el dataset de 100 fotos tiene un problema de fondo confuso (cartel de museo) en el recorte de zoom — se ofreció arreglarlo aparte, el usuario no lo ha pedido todavía.
-3. ~~Modo "Por sonido" usa audio sintético~~ — **resuelto, ver §22**: ahora usa 39 grabaciones reales y funciona como reto diario.
-4. **Login con Google configurado pero oculto** — ver §19.4, el botón está en el código (`js/auth.js`, `index.html`) pero con `class="hidden"` porque Google Cloud pedía datos de facturación para crear las credenciales OAuth. Se puede reactivar si el usuario decide hacerlo con un adulto delante (cuenta de Google sin restricción de edad) o si encuentra la forma de saltarse el paso de facturación.
+Histórico de items ya resueltos, para referencia: icono de Porsche en el menú (resuelto conscientemente, ver §20), modo "Por sonido" con audio sintético (resuelto del todo, ver §22, incluida la ampliación a 60 y el sonido del día con base de datos).
+
+**La lista de pendientes actuales vive en un solo sitio para no duplicar y desincronizar: ver §23 (al final del documento).**
 
 ---
 
@@ -302,17 +301,19 @@ Efecto secundario del §9 (Fix 3): al crecer el ancho de `#app`, las miniaturas 
 
 - `index.html` — estructura de las pantallas (menú, juego, resultados, clasificación), modal de login, fondo animado, dial de dificultad ×2 (identificar y logos), selector de idioma, insignia de cuenta.
 - `css/styles.css` — todo el sistema de diseño, animaciones de fondo, feedback de fallo, responsive, estilos del modal de login y de la clasificación (podio F1).
-- `js/data.js` — `BRAND_MODELS`, `BRANDS`, `ALL_MODELS`, `LOGO_ONLY_BRANDS`, `LOGO_BRANDS`, `LOGO_DIFFICULTY`, `CARS` (100 coches), `SOUND_CARS` (39 coches con sonido real, ver §22), `COUNTRIES`, `PART_FOCUS`, `ZOOM_SCHEDULE`, `YEAR_TOLERANCE`, `SOUND_YEAR_TOLERANCE`, `DIFFICULTY_MAX_SCORE`, `SOUND_MAX_SCORE`, `SPEED_BONUS`, `SPEED_BONUS_FLOOR`.
+- `js/data.js` — `BRAND_MODELS`, `BRANDS`, `ALL_MODELS`, `LOGO_ONLY_BRANDS`, `LOGO_BRANDS`, `LOGO_DIFFICULTY`, `CARS` (100 coches), `SOUND_CARS` (60 coches con sonido real, orden del array ya barajado a propósito una vez — ver §22.6/22.7), `COUNTRIES`, `PART_FOCUS`, `ZOOM_SCHEDULE`, `YEAR_TOLERANCE`, `SOUND_YEAR_TOLERANCE`, `DIFFICULTY_MAX_SCORE`, `SOUND_MAX_SCORE`, `SPEED_BONUS`, `SPEED_BONUS_FLOOR`.
 - `js/i18n.js` — sistema de idiomas (inglés por defecto / español), `STRINGS`, `translateCountry/Model/Part`, `applyStaticI18n()`. Ver §16.
 - `js/visuals.js` — `LOGO_FILE_BY_BRAND` (mapa marca→slug), `buildLogoUri()`, generación de imágenes placeholder de coche (`buildCarImageUri`, ya no usada para el modo logos).
-- `js/game.js` — toda la lógica de juego: `buildQuestions`, `startRound`, `renderStimulus`, `checkIdentifyAttempt`, `checkSimpleAnswer`, `triggerFailFeedback`, `scrollToStimulus`, `finishIdentifyQuestion`, bono de velocidad (`speedMultiplier`, `startSpeedTimer`), guardado de puntuación (`saveScoreIfLoggedIn`), wiring de eventos al final del archivo.
+- `js/game.js` — toda la lógica de juego: `buildQuestions`, `startRound` (ambas `async` por el sonido del día, ver §22.7), `renderStimulus`, `checkIdentifyAttempt`, `checkSimpleAnswer`, `triggerFailFeedback`, `scrollToStimulus`, `finishIdentifyQuestion`, `getTodaysSoundCar` (consulta/inserta en Supabase), bono de velocidad (`speedMultiplier`, `startSpeedTimer`), guardado de puntuación (`saveScoreIfLoggedIn`), wiring de eventos al final del archivo.
 - `js/autocomplete.js` — lógica de autocompletado genérica usada por marca/modelo/país.
 - `js/audio.js` — reproduce el mp3 real del "sonido del día" (ver §22).
 - `js/supabase-config.js` — `SUPABASE_URL` / `SUPABASE_ANON_KEY` (públicas a propósito, protegidas por RLS).
 - `js/auth.js` — cliente de Supabase, login/registro, perfil de usuario, edición de nombre.
 - `js/leaderboard.js` — pantalla de clasificación diaria, pestañas de modo/dificultad, guardado con "mejor puntuación del día".
+- **Tablas en Supabase**: `profiles` (nombre público), `scores` (una fila por usuario+modo+dificultad+día, restricción única + política de `UPDATE`), `daily_sound` (`played_on` date PK + `sound_id`, abierta a `anon` porque el modo sonido no exige login — ver §22.7).
 - `assets/logos/*.png` — los 100 logos reales (500×500, fondo crema `#f3eee3`).
 - `assets/ui/*.png` — los 4 iconos de menú (identificar, sonido, logos, clasificación), con fondo transparente — ver §20.
+- `assets/sounds/*.mp3` — los 60 sonidos reales de motor (ver §22), recortados/normalizados con `ffmpeg`.
 - `assets/` (resto) — las 100 fotos de coches reales de la fase anterior.
 
 ---
@@ -438,9 +439,9 @@ Rediseño grande a petición del usuario: antes generaba pitidos sintéticos (We
   - Un script de bash que mezclaba `node -e "..." | while read ...` con llamadas a `ffmpeg` **dentro** del bucle rompía la lectura del pipe (ffmpeg consume stdin por defecto) — solución: `ffmpeg -nostdin` en todas las llamadas, y volcar la lista a un fichero temporal en vez de leer directamente de un pipe.
   - `grep -P` (regex tipo Perl) fallaba con "supports only unibyte and UTF-8 locales" en este Git Bash de Windows pese a tener `LC_CTYPE=C.UTF-8` — solución: usar `grep -oE` (regex extendida POSIX, sin `\K`) en su lugar.
 
-### 22.3 Rotación diaria determinista (sin servidor)
+### 22.3 Rotación diaria (versión inicial, ya sustituida — ver §22.7)
 
-`getTodaysSoundCar()` en `game.js`: `SOUND_CARS[Math.floor(Date.now()/86400000) % SOUND_CARS.length]`. Con 39 sonidos, el mismo sonido no puede repetirse hasta pasados 39 días (por encima del mínimo de un mes pedido) — determinista y sin necesidad de guardar nada en el servidor, todo el mundo calcula el mismo índice a partir de la fecha.
+Primera versión de `getTodaysSoundCar()` en `game.js`: `SOUND_CARS[Math.floor(Date.now()/86400000) % SOUND_CARS.length]`. Determinista y sin servidor, todo el mundo calcula el mismo índice a partir de la fecha. **Esta versión se sustituyó más tarde** porque el usuario cayó en la cuenta de un problema: al ser el array de longitud fija, el patrón se repite exactamente igual cada vuelta completa (cada 39, luego 60, días) — cumple el "mínimo de 30 días" pero no es aleatorio a largo plazo, alguien que jugara varios meses acabaría notando el patrón. Ver §22.7 para la solución final (con base de datos).
 
 **Un intento real al día**: se guarda en `localStorage` (`qc_sound_state`, con la fecha y la puntuación) al terminar la ronda. Si vuelves a intentar el mismo modo el mismo día, `startRound()` detecta el estado guardado y muestra directamente la pantalla de resultados de ese intento (con el botón "Jugar otra vez" oculto) en vez de dejar jugar otra vez — funciona **independientemente de si has iniciado sesión**, es una regla del propio juego, no de la cuenta.
 
@@ -454,6 +455,51 @@ En vez de duplicar código, se generalizaron las funciones ya existentes para qu
 - **⚠️ Bug encontrado en la primera pasada**: se me olvidó actualizar `checkAnswer()` (el router que decide si llamar a `checkIdentifyAttempt` o `checkSimpleAnswer`), así que aunque el formulario ya mostraba los 4 campos correctamente, seguía comprobando y puntuando solo por marca (usando `checkSimpleAnswer`, que ignora modelo/país/año). Se detectó de inmediato al probar en el navegador (el mensaje de "correcto" no era el de Identificar) y se corrigió.
 - `js/audio.js` se simplificó del todo: ya no sintetiza nada, solo reproduce el mp3 real de `q.car.sound` con un `<audio>` normal.
 
+### 22.5 Revisión de calidad: modo de prueba temporal + bug grave encontrado
+
+El usuario escuchó los 39 sonidos y reportó varios problemas concretos: el del día (Opel Corsa, un "startup sound" de 4s) apenas se oía acelerar; y al pedir que se revisaran todos, otros 6 salieron mal — 4 **completamente en silencio** (Mercedes-Benz W154, Maserati GranTurismo S, Volkswagen Escarabajo, Honda S2000) y 2 cortados a los ~2 segundos (Scirocco R, Porsche 911R).
+
+**Modo de prueba temporal** (`SOUND_TEST_MODE` en `game.js`, ya eliminado del todo, ver §22.6): mientras se revisaba, se añadió un flag que hacía que cada "Comenzar" en Sonido diera un sonido distinto (en orden s1, s2, s3... a petición del usuario, para poder auditar sistemáticamente) sin bloquear tras jugarlo y sin guardar en la clasificación real, más un botón "Siguiente sonido" que mostraba el nombre del coche en pantalla para no tener que rellenar el formulario cada vez. Patrón reutilizable si hiciera falta auditar contenido de nuevo en el futuro.
+
+**⚠️ Causa real del bug (importante si se vuelve a tocar el pipeline de audio)**: al recortar con `ffmpeg -i origen -ss OFFSET -t DURACION` (seek de **salida**, después de `-i`, elegido originalmente por ser más preciso a nivel de frame), el filtro `afade=t=out:st=X` no reseteaba su reloj interno al punto de corte — seguía contando desde la marca de tiempo **absoluta** del archivo original. Con un `OFFSET` grande (p. ej. 21.5s), el filtro consideraba que el fundido de salida (pensado para “X segundos relativos al recorte”) ya había pasado hacía rato para *todo* el recorte, dejándolo en silencio total; con un `OFFSET` mediano (~5-7s), el fundido se disparaba solo 1-2 segundos después de empezar, cortando el clip antes de tiempo. Los recortes con `OFFSET` casi cero (la mayoría, formato típico de "revienta el motor para la cámara" del contribuidor Edvvc) no lo sufrían, por eso pasó desapercibido en la primera tanda.
+
+**Diagnóstico**: se aisló probando el mismo recorte con y sin cada filtro por separado (`-af "afade=t=out:..."` solo, sin `loudnorm` ni `afade in`) hasta confirmar que el fundido de salida por sí solo ya producía silencio; y comparando `-ss` antes vs. después de `-i` con los mismos parámetros — con `-ss` **antes** de `-i` (seek de entrada, que sí resetea la marca de tiempo a 0 para el stream recortado) el mismo fundido funcionaba bien.
+
+**Arreglo aplicado a los 39 (y reutilizado para los 21 nuevos de §22.6)**: mover `-ss` a antes de `-i` en todos los recortes, y **verificar cada archivo de salida** con `ffmpeg -af volumedetect` tras generarlo (en vez de fiarse de que `ffmpeg` no diera error) — el propio script marca con `⚠️ SILENCIO` cualquier salida con `mean_volume` por debajo de -60dB, para detectar este tipo de fallo automáticamente la próxima vez. Además, para los clips más largos (probablemente con un tramo de ralentí/preparación antes de la parte interesante), en vez de adivinar un punto de corte se escanea el volumen medio en varias ventanas a lo largo de todo el archivo (`ffmpeg -af volumedetect` repetido cada ~10% de la duración) y se elige la ventana más alta.
+
+### 22.6 Ampliación a 60 sonidos
+
+A petición del usuario ("añade hasta que hayan 60"), se sourceó otra tanda de 21 sonidos reales más, mismo proceso (Wikimedia Commons, licencia verificada por API antes de descargar, pipeline corregido de §22.5). Se aprovechó para meter marcas que no estaban representadas todavía en el modo sonido: **Alpine, Bentley, De Tomaso, Pagani, Dodge** — más variedad extra para marcas ya presentes (segundo/tercer Ferrari, Audi, BMW, Ford, Jaguar, Alfa Romeo, Skoda, Toyota, Porsche...). Los 21 pasaron la misma verificación de "no silencio" antes de darlos por buenos. Total: **60 sonidos** en `SOUND_CARS`.
+
+### 22.7 Sonido del día "de verdad" aleatorio: tabla en Supabase
+
+El usuario cayó en la cuenta del problema de fondo de §22.3: con un array de longitud fija recorrido por fecha, el patrón entero se repite igual cada vuelta (cada 60 días desde la ampliación) — cumple "mínimo 30 días" pero no es aleatorio de verdad a largo plazo. Como ya había base de datos montada (Supabase, del sistema de clasificación), se aprovechó para resolverlo bien en vez de con otro parche determinista.
+
+**Solución**: nueva tabla `daily_sound` (`played_on` date como clave primaria, `sound_id`). `getTodaysSoundCar()` (ahora `async`, igual que `buildQuestions()` y `startRound()` que la llaman) hace:
+1. Busca si ya hay fila para la fecha de hoy — si la hay, usa ese `sound_id` (así todo el mundo ve el mismo sonido el mismo día).
+2. Si no la hay, mira qué `sound_id` han salido en los últimos 30 días (consulta con `played_on >= hoy-30`), calcula el conjunto de sonidos "elegibles" (los que no han salido en ese margen) y elige uno **de verdad al azar** de ahí.
+3. Inserta esa elección como la fila de hoy.
+
+**Condición de carrera** (dos personas pidiendo el sonido del día casi a la vez): como `played_on` es la clave primaria, si dos clientes intentan insertar su elección para la misma fecha, el segundo `insert` falla con `23505` (violación de clave única) — se captura ese error concreto y, en vez de tratarlo como un fallo, se vuelve a leer la fila (que ya existe, la insertó el otro cliente primero) y se usa esa. Probado en local forzando el conflicto a mano (insertando dos veces la misma fecha) para confirmar que Supabase responde con ese código exacto.
+
+**Red de seguridad**: si Supabase no está configurado o la consulta falla por cualquier motivo, cae de vuelta al reparto determinista antiguo (`SOUND_CARS[epochDay % length]`) para que el modo sonido nunca se quede sin poder jugarse — mismo patrón defensivo que ya se usa en `auth.js` para cuando `js/supabase-config.js` no tiene credenciales reales.
+
+**Políticas RLS de `daily_sound`**: `SELECT` e `INSERT` abiertas a `anon` además de `authenticated` — a diferencia de `profiles`/`scores`, el modo sonido se puede jugar **sin haber iniciado sesión**, así que esta tabla tiene que ser legible/escribible también para visitantes sin cuenta.
+
+### 22.8 Crédito de la grabación
+
+Al revisar qué le faltaba a la app (pregunta directa del usuario), se detectó que el modo sonido nunca mostraba `q.car.credit` en pantalla — a diferencia de Identificar, que sí muestra el crédito de la foto (`.photo-credit`). Dado que las licencias CC BY / CC BY-SA de Wikimedia **exigen atribución**, esto no era solo un problema de consistencia visual sino un hueco real de cumplimiento de licencia. Arreglado reutilizando la misma clase `.photo-credit` en el bloque de sonido de `renderStimulus()`.
+
 ---
 
-*Documento generado el 11 sept. 2026, ampliado el 12 sept. 2026 con todo el trabajo de sesión: idiomas, bono de velocidad, topes de puntuación por dificultad, clasificación diaria con login (Supabase), rediseño de la clasificación estilo podio F1, iconos de menú con transparencia real, despliegue continuo en Vercel vía GitHub, y el modo "Por sonido" convertido en reto diario con grabaciones reales de motor.*
+## 23. Pendientes conocidos a día de hoy (12 sept. 2026, última revisión)
+
+1. **Login con Google** — sigue oculto (`class="hidden"`), ver §19.4. Pendiente de que el usuario decida retomarlo con una cuenta sin restricción de edad para Google Cloud, o dejarlo aparcado.
+2. **Sitio de Netlify abandonado** — sigue publicado con una versión muy antigua (ver §21), puede confundir a quien lo encuentre por error. Pendiente de decidir si se actualiza o se borra.
+3. **Foto c100 (Rolls-Royce Phantom VI)** — fondo de museo confuso en el recorte de zoom, ofrecido arreglar hace tiempo, nunca pedido.
+4. **Sin probar a fondo en móvil real** desde que entró todo lo de sonido/clasificación/idiomas — solo verificaciones puntuales de layout, no una pasada completa de funcionalidad.
+5. **Objetivo final declarado desde el principio del proyecto** (empaquetar con Capacitor para iOS/Android) — sigue sin empezar. Haría falta antes: icono de la app, manifest, favicon (nada de esto existe todavía).
+
+---
+
+*Documento generado el 11 sept. 2026, ampliado el 12 sept. 2026 con todo el trabajo de sesión: idiomas, bono de velocidad, topes de puntuación por dificultad, clasificación diaria con login (Supabase), rediseño de la clasificación estilo podio F1, iconos de menú con transparencia real, despliegue continuo en Vercel vía GitHub, el modo "Por sonido" convertido en reto diario con grabaciones reales de motor (39→60 sonidos, bug de silencio encontrado y corregido, sonido del día resuelto con tabla en Supabase para que sea aleatorio de verdad), y el crédito de la grabación en pantalla.*
