@@ -6,7 +6,7 @@
 <title>Car Quiz</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
-<link rel="stylesheet" href="css/styles.css?v=25">
+<link rel="stylesheet" href="css/styles.css?v=26">
 </head>
 <body>
 
@@ -145,7 +145,6 @@
 
       <div class="mode-card" data-mode="logo">
         <button class="mode-head" aria-expanded="false" aria-controls="panel-logo">
-          <!-- TEMPORAL: este icono usa el escudo real de Porsche, pendiente de cambiar por uno propio -->
           <div class="mode-media" data-slot="logo">
             <img src="assets/ui/mode-logo.jpg" alt="" />
           </div>
@@ -202,13 +201,20 @@
       <div class="mode-card mode-card-leaderboard" data-mode="leaderboard">
         <button class="mode-head" id="btn-open-leaderboard">
           <div class="mode-media leaderboard-icon">
-            <svg viewBox="0 0 48 48" fill="none" stroke="#f2a33b" stroke-width="2" aria-hidden="true">
-              <path d="M14 8h20v10a10 10 0 0 1-20 0V8z"/>
-              <path d="M14 11H8a4 4 0 0 0 4 8"/>
-              <path d="M34 11h6a4 4 0 0 1-4 8"/>
-              <path d="M24 28v7"/>
-              <path d="M17 40h14"/>
-              <path d="M17 40c0-3 3-4 7-4s7 1 7 4"/>
+            <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="trophyGrad" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+                  <stop offset="0" stop-color="#e9c47e"/>
+                  <stop offset="1" stop-color="#96662c"/>
+                </linearGradient>
+              </defs>
+              <g stroke="url(#trophyGrad)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 8h16v9a8 8 0 0 1-16 0V8z"/>
+                <path d="M16 11h-5a4 4 0 0 0 4 7"/>
+                <path d="M32 11h5a4 4 0 0 1-4 7"/>
+                <path d="M24 25v6"/>
+                <path d="M17 39c0-2.8 3.1-4 7-4s7 1.2 7 4"/>
+              </g>
             </svg>
           </div>
           <div class="mode-info">
@@ -334,15 +340,15 @@
 
 </div>
 
-<script src="js/data.js?v=25"></script>
-<script src="js/i18n.js?v=25"></script>
+<script src="js/data.js?v=26"></script>
+<script src="js/i18n.js?v=26"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase-config.js?v=25"></script>
-<script src="js/auth.js?v=25"></script>
-<script src="js/leaderboard.js?v=25"></script>
-<script src="js/audio.js?v=25"></script>
-<script src="js/visuals.js?v=25"></script>
-<script src="js/autocomplete.js?v=25"></script>
-<script src="js/game.js?v=25"></script>
+<script src="js/supabase-config.js?v=26"></script>
+<script src="js/auth.js?v=26"></script>
+<script src="js/leaderboard.js?v=26"></script>
+<script src="js/audio.js?v=26"></script>
+<script src="js/visuals.js?v=26"></script>
+<script src="js/autocomplete.js?v=26"></script>
+<script src="js/game.js?v=26"></script>
 </body>
 </html>

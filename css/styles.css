@@ -534,6 +534,9 @@ body{
 .mode-media.leaderboard-icon{ display:flex; align-items:center; justify-content:center; }
 .mode-media.leaderboard-icon svg{ width:56%; height:56%; }
 
+.mode-media.logo-badge-icon{ display:flex; align-items:center; justify-content:center; }
+.mode-media.logo-badge-icon svg{ width:48%; height:78%; }
+
 /* ---------- MODAL DE LOGIN ---------- */
 .modal{ position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; padding:20px; }
 .modal.hidden{ display:none; }
