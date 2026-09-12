@@ -490,6 +490,12 @@ El usuario cayó en la cuenta del problema de fondo de §22.3: con un array de l
 
 Al revisar qué le faltaba a la app (pregunta directa del usuario), se detectó que el modo sonido nunca mostraba `q.car.credit` en pantalla — a diferencia de Identificar, que sí muestra el crédito de la foto (`.photo-credit`). Dado que las licencias CC BY / CC BY-SA de Wikimedia **exigen atribución**, esto no era solo un problema de consistencia visual sino un hueco real de cumplimiento de licencia. Arreglado reutilizando la misma clase `.photo-credit` en el bloque de sonido de `renderStimulus()`.
 
+### 22.9 El sonido seguía sonando al salir de la pantalla
+
+Bug reportado por el usuario: si reproducías el sonido del día y salías de esa pantalla (botón "X", o al pasar a resultados) antes de que terminara el clip, se quedaba sonando de fondo — `playCarSound()` (`js/audio.js`) solo paraba el clip **anterior** al arrancar uno nuevo, nunca al abandonar la pantalla sin más.
+
+**Arreglo**: nueva función `stopCarSound()` en `audio.js` (pausa y resetea `currentAudioEl.currentTime`), reutilizada tanto por `playCarSound()` (antes de arrancar un clip nuevo, como ya hacía) como llamada desde `showScreen()` en `game.js` cada vez que la pantalla de destino **no** es `screen-game` — así cualquier forma de salir de la pregunta (salir al menú, terminar la ronda, lo que sea) corta el audio sin tener que acordarse de llamarlo a mano en cada sitio.
+
 ---
 
 ## 23. Pendientes conocidos a día de hoy (12 sept. 2026, última revisión)
@@ -502,4 +508,4 @@ Al revisar qué le faltaba a la app (pregunta directa del usuario), se detectó 
 
 ---
 
-*Documento generado el 11 sept. 2026, ampliado el 12 sept. 2026 con todo el trabajo de sesión: idiomas, bono de velocidad, topes de puntuación por dificultad, clasificación diaria con login (Supabase), rediseño de la clasificación estilo podio F1, iconos de menú con transparencia real, despliegue continuo en Vercel vía GitHub, el modo "Por sonido" convertido en reto diario con grabaciones reales de motor (39→60 sonidos, bug de silencio encontrado y corregido, sonido del día resuelto con tabla en Supabase para que sea aleatorio de verdad), y el crédito de la grabación en pantalla.*
+*Documento generado el 11 sept. 2026, ampliado el 12 sept. 2026 con todo el trabajo de sesión: idiomas, bono de velocidad, topes de puntuación por dificultad, clasificación diaria con login (Supabase), rediseño de la clasificación estilo podio F1, iconos de menú con transparencia real, despliegue continuo en Vercel vía GitHub, el modo "Por sonido" convertido en reto diario con grabaciones reales de motor (39→60 sonidos, bug de silencio encontrado y corregido, sonido del día resuelto con tabla en Supabase para que sea aleatorio de verdad), el crédito de la grabación en pantalla, y el sonido cortándose al salir de la pregunta.*
