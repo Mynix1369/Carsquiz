@@ -54,8 +54,14 @@ function buildQuestions(mode, difficulty){
 // el "sonido del día": rota de forma determinista (misma fecha = mismo sonido para
 // todo el mundo, sin necesidad de servidor) y no repite hasta dar toda la vuelta a la
 // lista, así que con 39 sonidos nunca se repite antes de 39 días.
+let soundTestIndex = 0; // ⚠️ TEMPORAL: recorre SOUND_CARS en orden (s1, s2, s3...) en modo prueba
+
 function getTodaysSoundCar(){
-  if(SOUND_TEST_MODE) return SOUND_CARS[Math.floor(Math.random() * SOUND_CARS.length)];
+  if(SOUND_TEST_MODE){
+    const car = SOUND_CARS[soundTestIndex % SOUND_CARS.length];
+    soundTestIndex++;
+    return car;
+  }
   const epochDay = Math.floor(Date.now() / 86400000);
   return SOUND_CARS[epochDay % SOUND_CARS.length];
 }
