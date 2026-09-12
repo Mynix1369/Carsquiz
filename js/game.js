@@ -139,6 +139,9 @@ function startSpeedTimer(){
 
 // ---------- pantallas ----------
 function showScreen(id){
+  // si el sonido del día está sonando y cambiamos de pantalla (salir, pasar a
+  // resultados...), lo cortamos para que no se quede de fondo sin verse la pregunta.
+  if(id !== "screen-game" && typeof stopCarSound === "function") stopCarSound();
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
 }
