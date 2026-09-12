@@ -240,19 +240,30 @@ function renderStimulus(q){
     const box = document.createElement("div");
     box.className = "sound-box";
     box.innerHTML = `
-      <button id="play-sound-btn" class="play-btn">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-      </button>
+      <div class="sound-controls">
+        <button id="play-pause-btn" class="play-btn" title="${t("playLabel")}" aria-label="${t("playLabel")}">
+          <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="icon-pause hidden" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+        </button>
+        <button id="replay-btn" class="replay-btn" title="${t("replayLabel")}" aria-label="${t("replayLabel")}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        </button>
+      </div>
       <p class="hint-text">${t("soundHint")}</p>`;
     area.appendChild(box);
-    document.getElementById("play-sound-btn").addEventListener("click", () => playCarSound(q.car));
+
+    loadCarSound(q.car);
+    onAudioStateChange = updatePlayPauseIcon;
+    updatePlayPauseIcon("paused");
+    document.getElementById("play-pause-btn").addEventListener("click", togglePlayPauseCarSound);
+    document.getElementById("replay-btn").addEventListener("click", replayCarSound);
+
     if(q.car.credit){
       const credit = document.createElement("p");
       credit.className = "photo-credit";
       credit.textContent = q.car.credit;
       area.appendChild(credit);
     }
-    playCarSound(q.car);
     return;
   }
 
@@ -265,6 +276,19 @@ function renderStimulus(q){
   p.className = "hint-text";
   p.textContent = t("logoHint");
   area.appendChild(p);
+}
+
+// alterna el icono del botón grande entre play/pausa según lo que esté haciendo el audio
+// ("paused"/"ended" -> mostrar play; "playing" -> mostrar pausa)
+function updatePlayPauseIcon(state){
+  const btn = document.getElementById("play-pause-btn");
+  if(!btn) return;
+  const playing = state === "playing";
+  btn.querySelector(".icon-play").classList.toggle("hidden", playing);
+  btn.querySelector(".icon-pause").classList.toggle("hidden", !playing);
+  const label = t(playing ? "pauseLabel" : "playLabel");
+  btn.title = label;
+  btn.setAttribute("aria-label", label);
 }
 
 function updateScanMeta(q){

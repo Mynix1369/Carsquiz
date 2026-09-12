@@ -437,12 +437,21 @@ body{
   width:100%; background:var(--surface-1); border:1px solid var(--line); border-radius:var(--radius);
   padding:32px 16px; display:flex; flex-direction:column; align-items:center; gap:14px;
 }
+.sound-controls{ display:flex; align-items:center; justify-content:center; gap:16px; }
 .play-btn{
   width:72px; height:72px; border-radius:50%; background:var(--amber); border:none; color:#241704;
-  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; position:relative;
 }
 .play-btn svg{ width:26px; height:26px; }
+.play-btn svg.hidden{ display:none; }
 .play-btn:active{ transform:scale(0.96); }
+.replay-btn{
+  background:var(--surface-2); border:1px solid var(--line); color:var(--text-soft);
+  width:44px; height:44px; border-radius:50%; cursor:pointer; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.replay-btn svg{ width:18px; height:18px; }
+.replay-btn:active{ transform:scale(0.96); }
 
 .logo-box{
   width:58%; aspect-ratio:1/1; margin:0 auto; background:var(--surface-1); border:1px solid var(--line);

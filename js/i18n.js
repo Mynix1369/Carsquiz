@@ -32,6 +32,9 @@ const STRINGS = {
     identifyHint: "Which car is this part from?",
     soundHint: "Tap to hear today's sound and guess the car",
     soundAlreadyPlayed: "You've already played today's sound. Come back tomorrow for a new one!",
+    playLabel: "Play",
+    pauseLabel: "Pause",
+    replayLabel: "Replay",
     logoHint: "Which brand does this logo belong to?",
     scanCropLabel: "Crop",
 
@@ -113,6 +116,9 @@ const STRINGS = {
     identifyHint: "¿De qué coche es esta parte?",
     soundHint: "Pulsa para escuchar el sonido de hoy y adivina el coche",
     soundAlreadyPlayed: "Ya has jugado el sonido de hoy. ¡Vuelve mañana a por uno nuevo!",
+    playLabel: "Reproducir",
+    pauseLabel: "Pausar",
+    replayLabel: "Repetir",
     logoHint: "¿De qué marca es este logo de muestra?",
     scanCropLabel: "Recorte",
 
