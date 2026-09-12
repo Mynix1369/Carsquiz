@@ -105,6 +105,31 @@ function saveSoundPlayState(result){
   } catch(e){}
 }
 
+// si hay sesión iniciada, el localStorage de cada aparato no sirve para saber si ya se
+// jugó hoy (un mismo usuario en el móvil y en el ordenador tiene dos localStorage
+// distintos) — se comprueba en su lugar la tabla "scores", que es la misma para todos
+// los aparatos donde ese usuario inicie sesión. Si no hay sesión, no hay forma de saber
+// quién es el jugador entre aparatos, así que se usa el localStorage como antes (mejor
+// esfuerzo, solo vale por aparato).
+async function alreadyPlayedSoundToday(){
+  const local = getSoundPlayState();
+  if(typeof isLoggedIn === "function" && isLoggedIn() && sb){
+    try {
+      const { data } = await sb.from("scores")
+        .select("score")
+        .eq("user_id", currentUser.id)
+        .eq("mode", "sound")
+        .eq("difficulty", "none")
+        .eq("played_on", todayKey())
+        .maybeSingle();
+      if(data) return { score: data.score };
+    } catch(e){
+      console.error("No se pudo comprobar si ya se jugó el sonido de hoy:", e);
+    }
+  }
+  return local;
+}
+
 // ---------- bono de velocidad ----------
 function speedBonusConfig(){
   if(state.mode === "identify") return SPEED_BONUS.identify[state.difficulty];
@@ -148,7 +173,7 @@ function showScreen(id){
 
 async function startRound(mode, difficulty){
   if(mode === "sound"){
-    const prev = getSoundPlayState();
+    const prev = await alreadyPlayedSoundToday();
     if(prev){ showAlreadyPlayedSound(prev); return; }
   }
   state.mode = mode;
