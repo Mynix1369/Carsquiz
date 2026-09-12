@@ -281,7 +281,7 @@ Efecto secundario del §9 (Fix 3): al crecer el ancho de `#app`, las miniaturas 
 - **Siempre pide ver primero mi opinión/propuesta antes de implementar** cambios visuales o de diseño grandes ("tú cómo lo harías", "dime qué opinas", "antes de hacer nada, dime cómo lo harías"). No hay que lanzarse a picar código sin ese paso en temas de diseño.
 - **Mockups en Artifact antes de tocar la app real** para cambios visuales grandes (se estableció con "Salpicadero" y se ha repetido varias veces).
 - **Siempre verificar en el navegador** (Browser pane) tras cada cambio, en escritorio y en móvil (`resize_window preset:"mobile"`), antes de dar el cambio por bueno — el usuario detecta rápido si no se ha probado.
-- **Cache-busting**: todos los `<link>`/`<script>` de `index.html` llevan `?v=N`. Cada vez que se edita CSS/JS hay que subir el número (`sed -i 's/?v=N/?v=N+1/g' index.html`) o el navegador (y el propio Netlify) sirve versión cacheada vieja. **Número actual: v=19** (subir a v=20 en el próximo cambio de CSS/JS).
+- **Cache-busting**: todos los `<link>`/`<script>` de `index.html` llevan `?v=N`. Cada vez que se edita CSS/JS hay que subir el número (`sed -i 's/?v=N/?v=N+1/g' index.html`) o el navegador sirve versión cacheada vieja. **Número actual: v=28** (subir en el próximo cambio de CSS/JS). Desde que hay despliegue continuo (§21), además hay que hacer `git add`+`commit`+`push` para que Vercel lo publique — el cache-busting por sí solo no sube nada a la web real.
 - **No usar nunca logos/imágenes inventados por IA como si fueran reales** — el usuario lo dejó clarísimo con el caso de Fiat. Todo el contenido del quiz tiene que ser real y verificable.
 - **Rechaza soluciones "de más"**: cuando propuse el marco de teléfono en escritorio, lo rechazó por no ser lo que pedía — prefiere la solución más simple y directa a lo que pide literalmente, no una reinterpretación creativa.
 - El usuario escribe en español informal, sin tildes muchas veces, mensajes cortos — hay que interpretar bien la intención pero sin sobre-elaborar la respuesta.
@@ -293,7 +293,7 @@ Efecto secundario del §9 (Fix 3): al crecer el ancho de `#app`, las miniaturas 
 
 1. ~~Icono de Porsche en el menú~~ — **resuelto, ya no es "temporal"**: ver §20. El usuario decidió conscientemente mantenerlo tal cual (real, no placeholder de IA), argumentando que no hay anuncios (solo donación voluntaria) y que el modo Logos ya usa 100 marcas reales como mecánica central, así que un escudo más como icono de menú no es un salto de riesgo. Se quitó el comentario `<!-- TEMPORAL -->` de `index.html`.
 2. **Foto c100 (Rolls-Royce Phantom VI)** en el dataset de 100 fotos tiene un problema de fondo confuso (cartel de museo) en el recorte de zoom — se ofreció arreglarlo aparte, el usuario no lo ha pedido todavía.
-3. **Modo "Por sonido" usa audio sintético, no grabaciones reales** — ver §22, es el pendiente activo a día de hoy.
+3. ~~Modo "Por sonido" usa audio sintético~~ — **resuelto, ver §22**: ahora usa 39 grabaciones reales y funciona como reto diario.
 4. **Login con Google configurado pero oculto** — ver §19.4, el botón está en el código (`js/auth.js`, `index.html`) pero con `class="hidden"` porque Google Cloud pedía datos de facturación para crear las credenciales OAuth. Se puede reactivar si el usuario decide hacerlo con un adulto delante (cuenta de Google sin restricción de edad) o si encuentra la forma de saltarse el paso de facturación.
 
 ---
@@ -302,12 +302,12 @@ Efecto secundario del §9 (Fix 3): al crecer el ancho de `#app`, las miniaturas 
 
 - `index.html` — estructura de las pantallas (menú, juego, resultados, clasificación), modal de login, fondo animado, dial de dificultad ×2 (identificar y logos), selector de idioma, insignia de cuenta.
 - `css/styles.css` — todo el sistema de diseño, animaciones de fondo, feedback de fallo, responsive, estilos del modal de login y de la clasificación (podio F1).
-- `js/data.js` — `BRAND_MODELS`, `BRANDS`, `ALL_MODELS`, `LOGO_ONLY_BRANDS`, `LOGO_BRANDS`, `LOGO_DIFFICULTY`, `CARS` (100 coches), `COUNTRIES`, `PART_FOCUS`, `ZOOM_SCHEDULE`, `YEAR_TOLERANCE`, `DIFFICULTY_MAX_SCORE`, `SPEED_BONUS`, `SPEED_BONUS_FLOOR`.
+- `js/data.js` — `BRAND_MODELS`, `BRANDS`, `ALL_MODELS`, `LOGO_ONLY_BRANDS`, `LOGO_BRANDS`, `LOGO_DIFFICULTY`, `CARS` (100 coches), `SOUND_CARS` (39 coches con sonido real, ver §22), `COUNTRIES`, `PART_FOCUS`, `ZOOM_SCHEDULE`, `YEAR_TOLERANCE`, `SOUND_YEAR_TOLERANCE`, `DIFFICULTY_MAX_SCORE`, `SOUND_MAX_SCORE`, `SPEED_BONUS`, `SPEED_BONUS_FLOOR`.
 - `js/i18n.js` — sistema de idiomas (inglés por defecto / español), `STRINGS`, `translateCountry/Model/Part`, `applyStaticI18n()`. Ver §16.
 - `js/visuals.js` — `LOGO_FILE_BY_BRAND` (mapa marca→slug), `buildLogoUri()`, generación de imágenes placeholder de coche (`buildCarImageUri`, ya no usada para el modo logos).
 - `js/game.js` — toda la lógica de juego: `buildQuestions`, `startRound`, `renderStimulus`, `checkIdentifyAttempt`, `checkSimpleAnswer`, `triggerFailFeedback`, `scrollToStimulus`, `finishIdentifyQuestion`, bono de velocidad (`speedMultiplier`, `startSpeedTimer`), guardado de puntuación (`saveScoreIfLoggedIn`), wiring de eventos al final del archivo.
 - `js/autocomplete.js` — lógica de autocompletado genérica usada por marca/modelo/país.
-- `js/audio.js` — sonidos del modo "Por sonido" (sintetizados, no reales — ver §22).
+- `js/audio.js` — reproduce el mp3 real del "sonido del día" (ver §22).
 - `js/supabase-config.js` — `SUPABASE_URL` / `SUPABASE_ANON_KEY` (públicas a propósito, protegidas por RLS).
 - `js/auth.js` — cliente de Supabase, login/registro, perfil de usuario, edición de nombre.
 - `js/leaderboard.js` — pantalla de clasificación diaria, pestañas de modo/dificultad, guardado con "mejor puntuación del día".
@@ -415,15 +415,45 @@ El despliegue anterior (Netlify Drop, §4) exigía subir la carpeta a mano cada 
 
 ---
 
-## 22. Pendiente activo: modo "Por sonido" sin contenido real
+## 22. Modo "Por sonido": rediseñado como reto diario con grabaciones reales
 
-`js/audio.js` genera un patrón de pitidos con Web Audio API a partir de un hash del `id`+`brand` del coche — **no son grabaciones de motores reales**, cada coche sí suena distinto y de forma consistente (mismo coche = mismo sonido siempre), pero el patrón no tiene relación real con cómo suena esa marca. El usuario preguntó explícitamente qué hacer al respecto — **todavía sin decidir**. Opciones sobre la mesa (pendiente de discutir con el usuario en la próxima sesión):
+Rediseño grande a petición del usuario: antes generaba pitidos sintéticos (Web Audio API, patrón por hash de `id`+`brand`, sin relación real con el motor) y solo pedía adivinar la marca. Ahora usa grabaciones reales y pide los mismos 4 campos que "Identifica el coche".
 
-1. **Sonidos reales agrupados por "arquetipo" de motor** (no por coche exacto): ~10-15 clips libres de derechos (CC0, ej. freesound.org) de sonidos genéricos (V8, 4 cilindros, eléctrico, diésel, etc.), asignando cada marca al arquetipo que le pega. Viable porque el juego solo pide adivinar la **marca**, no el modelo exacto — coherente con el resto de la app (contenido real, no inventado), pero requiere una sesión de sourcing (como se hizo con los logos, aunque a menor escala).
-2. **Mejorar la síntesis actual** para que sea coherente con las características reales del motor de cada marca (grave/agudo, suave/áspero) en vez de aleatoria por hash — cero riesgo de licencias, no requiere assets nuevos, pero nunca sonará "real".
+### 22.1 Decisiones (tras preguntar al usuario, 3 preguntas concretas)
 
-No implementado todavía — queda como el hilo abierto de esta sesión.
+- **Estructura de la ronda**: como Identificar — una sola "pregunta" (el sonido de hoy), hasta 5 intentos, mismos campos (marca/modelo/país/año), mismo feedback por intento. No hay "8 preguntas por ronda" porque solo hay un sonido al día.
+- **Repeticiones**: **un intento real al día, estilo Wordle** — una vez jugado (o simplemente al volver a intentarlo el mismo día), se bloquea hasta el día siguiente. Se avisó de la alternativa (repetible, como el resto de modos) pero se descartó a propósito para que tenga gracia de "reto del día".
+- **Dificultad**: sin niveles — un único sonido para todo el mundo cada día, con tolerancia de año fija (±3, el punto intermedio de Identificar) y puntuación máxima fija (100 pts, igual que el tope de "fácil" en Identificar), repartidos 100/80/60/40/20 según el intento.
+
+### 22.2 Sourcing de los sonidos reales
+
+39 grabaciones reales de motor, todas de **Wikimedia Commons** (`Category:Sounds of automobiles` + subcategorías de Porsche y de coches de carreras), con licencias CC BY / CC BY-SA / dominio público — verificadas una a una vía la API de Wikimedia (`imageinfo` con `extmetadata`) antes de descargar, igual que se hizo con los logos.
+
+- La mayoría son de un mismo contribuidor sistemático de Commons (**Edvvc**, CC BY-SA 3.0), que grabó decenas de coches de exhibición (Ferrari, Lamborghini, Porsche, McLaren, Aston Martin...) siempre con el mismo formato — de ahí que hubiera tanto donde elegir.
+- **Herramientas usadas** (ninguna estaba instalada, hubo que montarlas): `ffmpeg` vía el paquete npm `ffmpeg-static` (trae un binario portátil de Windows, no hace falta instalar nada a nivel de sistema) para recortar (~8s por clip, evitando el primer medio segundo de silencio), aplicar fade in/out y `loudnorm` (volumen consistente entre clips), y convertir a **mp3 mono 96kbps** — necesario porque el formato original de Commons es `.ogg`/`.opus`, que **no se reproduce en Safari/Chrome de iOS** (sin soporte de Ogg Vorbis en WebKit), a diferencia de mp3 que funciona en todos los navegadores.
+- **Países**: limitado a propósito a los 10 países que ya existen en `COUNTRIES` (no se tocó esa lista) — se descartaron candidatos igual de buenos como Spyker (Países Bajos) o Lada (Rusia) por no encajar, en vez de ampliar el sistema de países para esto.
+- **Selección de marca/modelo/año**: se sacó de los propios nombres de archivo de Commons (p. ej. `Ferrari 599 GTO.ogg`, `Peugeot 207 S2000 (2010).ogg`), sin inventar nada — mismo principio de "todo tiene que ser real y verificable" que el resto del proyecto.
+- **⚠️ Problemas técnicos encontrados al automatizar la descarga/conversión** (documentados por si se repite el proceso):
+  - Descargar los 40 archivos en paralelo/rápido disparó un `HTTP 429` (rate limit) de `upload.wikimedia.org` a partir del 11º archivo — solución: reintentos con backoff y una pausa de ~2.5s entre descargas.
+  - Un script de bash que mezclaba `node -e "..." | while read ...` con llamadas a `ffmpeg` **dentro** del bucle rompía la lectura del pipe (ffmpeg consume stdin por defecto) — solución: `ffmpeg -nostdin` en todas las llamadas, y volcar la lista a un fichero temporal en vez de leer directamente de un pipe.
+  - `grep -P` (regex tipo Perl) fallaba con "supports only unibyte and UTF-8 locales" en este Git Bash de Windows pese a tener `LC_CTYPE=C.UTF-8` — solución: usar `grep -oE` (regex extendida POSIX, sin `\K`) en su lugar.
+
+### 22.3 Rotación diaria determinista (sin servidor)
+
+`getTodaysSoundCar()` en `game.js`: `SOUND_CARS[Math.floor(Date.now()/86400000) % SOUND_CARS.length]`. Con 39 sonidos, el mismo sonido no puede repetirse hasta pasados 39 días (por encima del mínimo de un mes pedido) — determinista y sin necesidad de guardar nada en el servidor, todo el mundo calcula el mismo índice a partir de la fecha.
+
+**Un intento real al día**: se guarda en `localStorage` (`qc_sound_state`, con la fecha y la puntuación) al terminar la ronda. Si vuelves a intentar el mismo modo el mismo día, `startRound()` detecta el estado guardado y muestra directamente la pantalla de resultados de ese intento (con el botón "Jugar otra vez" oculto) en vez de dejar jugar otra vez — funciona **independientemente de si has iniciado sesión**, es una regla del propio juego, no de la cuenta.
+
+### 22.4 Reutilización de la lógica de "Identifica el coche"
+
+En vez de duplicar código, se generalizaron las funciones ya existentes para que sirvan a ambos modos:
+- `renderIdentifyForm` / `checkIdentifyAttempt` ahora se usan también para `state.mode === "sound"` (antes solo `renderSimpleForm`/`checkSimpleAnswer`, que ahora quedan solo para el modo Logos).
+- Nueva función `currentYearTolerance()`: devuelve `YEAR_TOLERANCE[state.difficulty]` en Identificar o `SOUND_YEAR_TOLERANCE` (fijo, 3) en Sonido — evita duplicar la lógica de tolerancia.
+- La escala de puntuación (la técnica del §18, acumular en `rawScore` sin escalar y convertir solo al final) se generalizó con `roundMaxRaw`/`targetMaxScore` en vez de asumir siempre `IDENTIFY_ROUND_LENGTH*50` → `DIFFICULTY_MAX_SCORE`; para sonido es simplemente `50 → 100` (una sola "pregunta").
+- `updateScanMeta(q)` (el zoom/crop de la foto) solo se llama si `state.mode === "identify"` — si se llamaba también en modo sonido rompía, porque `ZOOM_SCHEDULE[null]` no existe (el modo sonido no tiene dificultad).
+- **⚠️ Bug encontrado en la primera pasada**: se me olvidó actualizar `checkAnswer()` (el router que decide si llamar a `checkIdentifyAttempt` o `checkSimpleAnswer`), así que aunque el formulario ya mostraba los 4 campos correctamente, seguía comprobando y puntuando solo por marca (usando `checkSimpleAnswer`, que ignora modelo/país/año). Se detectó de inmediato al probar en el navegador (el mensaje de "correcto" no era el de Identificar) y se corrigió.
+- `js/audio.js` se simplificó del todo: ya no sintetiza nada, solo reproduce el mp3 real de `q.car.sound` con un `<audio>` normal.
 
 ---
 
-*Documento generado el 11 sept. 2026, ampliado el 12 sept. 2026 con todo el trabajo de sesión: idiomas, bono de velocidad, topes de puntuación por dificultad, clasificación diaria con login (Supabase), rediseño de la clasificación estilo podio F1, iconos de menú con transparencia real, y despliegue continuo en Vercel vía GitHub.*
+*Documento generado el 11 sept. 2026, ampliado el 12 sept. 2026 con todo el trabajo de sesión: idiomas, bono de velocidad, topes de puntuación por dificultad, clasificación diaria con login (Supabase), rediseño de la clasificación estilo podio F1, iconos de menú con transparencia real, despliegue continuo en Vercel vía GitHub, y el modo "Por sonido" convertido en reto diario con grabaciones reales de motor.*
