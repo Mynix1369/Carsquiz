@@ -16,7 +16,7 @@ const STRINGS = {
     modeIdentifyTitle: "Identify the car",
     modeIdentifyDesc: "Brand, model, country and year from a cropped photo",
     modeSoundTitle: "By sound",
-    modeSoundDesc: "Recognize the car just by its engine sound",
+    modeSoundDesc: "One real engine sound a day. Guess brand, model, country and year",
     modeLogoTitle: "Logos",
     modeLogoDesc: "Just the badge. Guess the brand on sight",
 
@@ -30,7 +30,8 @@ const STRINGS = {
     progressText: "Question {current}/{total}",
 
     identifyHint: "Which car is this part from?",
-    soundHint: "Tap to hear the sample sound and guess the brand",
+    soundHint: "Tap to hear today's sound and guess the car",
+    soundAlreadyPlayed: "You've already played today's sound. Come back tomorrow for a new one!",
     logoHint: "Which brand does this logo belong to?",
     scanCropLabel: "Crop",
 
@@ -96,7 +97,7 @@ const STRINGS = {
     modeIdentifyTitle: "Identifica el coche",
     modeIdentifyDesc: "Marca, modelo, país y año a partir de un recorte de la imagen",
     modeSoundTitle: "Por sonido",
-    modeSoundDesc: "Reconoce el coche solo por cómo suena su motor",
+    modeSoundDesc: "Un sonido real de motor al día. Adivina marca, modelo, país y año",
     modeLogoTitle: "Logos",
     modeLogoDesc: "Solo el emblema. Adivina la marca a la primera",
 
@@ -110,7 +111,8 @@ const STRINGS = {
     progressText: "Pregunta {current}/{total}",
 
     identifyHint: "¿De qué coche es esta parte?",
-    soundHint: "Pulsa para escuchar el sonido de muestra y adivina la marca",
+    soundHint: "Pulsa para escuchar el sonido de hoy y adivina el coche",
+    soundAlreadyPlayed: "Ya has jugado el sonido de hoy. ¡Vuelve mañana a por uno nuevo!",
     logoHint: "¿De qué marca es este logo de muestra?",
     scanCropLabel: "Recorte",
 

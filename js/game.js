@@ -31,18 +31,45 @@ function shuffle(arr){
 
 // ---------- construir ronda ----------
 function buildQuestions(mode, difficulty){
+  if(mode === "sound") return [{ car: getTodaysSoundCar() }];
+
   const n = mode === "identify" ? IDENTIFY_ROUND_LENGTH : SIMPLE_ROUND_LENGTH;
   if(mode === "logo"){
     const pool = LOGO_BRANDS.filter(b => LOGO_DIFFICULTY[b] === difficulty);
     return shuffle(pool).slice(0, n).map(brand => ({ car: { brand } }));
   }
-  if(mode !== "identify") return shuffle(CARS).slice(0, n).map(car => ({ car }));
 
   // mientras vayamos sustituyendo placeholders por fotos reales, priorizamos
   // los coches que ya tienen foto real para que aparezcan siempre primero.
   const withPhoto = shuffle(CARS.filter(c => c.image));
   const withoutPhoto = shuffle(CARS.filter(c => !c.image));
   return [...withPhoto, ...withoutPhoto].slice(0, n).map(car => ({ car }));
+}
+
+// el "sonido del día": rota de forma determinista (misma fecha = mismo sonido para
+// todo el mundo, sin necesidad de servidor) y no repite hasta dar toda la vuelta a la
+// lista, así que con 39 sonidos nunca se repite antes de 39 días.
+function getTodaysSoundCar(){
+  const epochDay = Math.floor(Date.now() / 86400000);
+  return SOUND_CARS[epochDay % SOUND_CARS.length];
+}
+
+// ---------- "ya has jugado el sonido de hoy" (localStorage, un intento real al día) ----------
+function todayKey(){ return new Date().toISOString().slice(0, 10); }
+
+function getSoundPlayState(){
+  try {
+    const raw = localStorage.getItem("qc_sound_state");
+    if(!raw) return null;
+    const state = JSON.parse(raw);
+    return state.date === todayKey() ? state : null;
+  } catch(e){ return null; }
+}
+
+function saveSoundPlayState(result){
+  try {
+    localStorage.setItem("qc_sound_state", JSON.stringify({ date: todayKey(), ...result }));
+  } catch(e){}
 }
 
 // ---------- bono de velocidad ----------
@@ -84,6 +111,10 @@ function showScreen(id){
 }
 
 function startRound(mode, difficulty){
+  if(mode === "sound"){
+    const prev = getSoundPlayState();
+    if(prev){ showAlreadyPlayedSound(prev); return; }
+  }
   state.mode = mode;
   state.difficulty = difficulty || null;
   state.questions = buildQuestions(mode, difficulty);
@@ -93,6 +124,20 @@ function startRound(mode, difficulty){
   state.scoreSaved = false;
   showScreen("screen-game");
   renderQuestion();
+}
+
+// el sonido del día solo se puede jugar una vez de verdad (como un reto diario): si ya
+// hay un resultado guardado de hoy, se muestra directamente en vez de dejar jugar otra vez.
+function showAlreadyPlayedSound(prev){
+  state.mode = "sound";
+  state.difficulty = null;
+  state.score = prev.score;
+  state.scoreSaved = false; // por si no estabas logueado cuando jugaste, se puede guardar ahora
+  document.getElementById("progress-fill").style.width = "100%";
+  document.getElementById("results-score").textContent = `${prev.score} pts`;
+  document.getElementById("results-detail").textContent = t("soundAlreadyPlayed");
+  document.getElementById("btn-replay").classList.add("hidden");
+  showScreen("screen-results");
 }
 
 function currentQuestion(){ return state.questions[state.index]; }
@@ -116,7 +161,7 @@ function renderQuestion(){
   checkBtn.disabled = false;
 
   renderStimulus(q);
-  if(state.mode === "identify") renderIdentifyForm(q);
+  if(state.mode === "identify" || state.mode === "sound") renderIdentifyForm(q);
   else renderSimpleForm(q);
   startSpeedTimer();
 }
@@ -195,6 +240,11 @@ function updateScanMeta(q){
   if(img) img.style.transform = `scale(${zoom})`;
 }
 
+// tolerancia de año: por dificultad en "identify", fija en "sound" (no tiene niveles)
+function currentYearTolerance(){
+  return state.mode === "sound" ? SOUND_YEAR_TOLERANCE : YEAR_TOLERANCE[state.difficulty];
+}
+
 // ---------- formulario modo "identify" (marca / modelo / país / año) ----------
 function renderIdentifyForm(q){
   const area = document.getElementById("answer-area");
@@ -218,14 +268,14 @@ function renderIdentifyForm(q){
         <div class="autocomplete"><input type="text" id="f-country" autocomplete="off" placeholder="${t("placeholderCountry")}" /><div class="ac-list hidden"></div></div>
       </div>
       <div class="field" data-field="year">
-        <label>${t("fieldYear")} <span class="field-hint">(${t("yearsTolerance", { n: YEAR_TOLERANCE[state.difficulty] })})</span></label>
+        <label>${t("fieldYear")} <span class="field-hint">(${t("yearsTolerance", { n: currentYearTolerance() })})</span></label>
         <input type="text" id="f-year" inputmode="numeric" autocomplete="off" placeholder="${t("placeholderYear")}" />
       </div>
     </div>`;
 
   attachAutocomplete(
     area.querySelector('[data-field="brand"] .autocomplete'),
-    () => BRANDS,
+    () => (state.mode === "sound" ? LOGO_BRANDS : BRANDS),
     (val) => { state.selectedBrand = val; }
   );
   attachAutocomplete(
@@ -279,7 +329,7 @@ function checkIdentifyAttempt(q){
     brand: vals.brand.trim() !== "" && normalize(vals.brand) === normalize(q.car.brand),
     model: vals.model.trim() !== "" && normalize(vals.model) === normalize(translateModel(q.car.model)),
     country: vals.country.trim() !== "" && normalize(vals.country) === normalize(translateCountry(q.car.country)),
-    year: !isNaN(yearGuess) && Math.abs(yearGuess - q.car.year) <= YEAR_TOLERANCE[state.difficulty],
+    year: !isNaN(yearGuess) && Math.abs(yearGuess - q.car.year) <= currentYearTolerance(),
   };
 
   state.history.push({ vals, correct });
@@ -291,8 +341,11 @@ function checkIdentifyAttempt(q){
 
   // la puntuación se acumula sin escalar (máx. 50 pts/pregunta) y solo al final se convierte
   // a la escala de la dificultad; así una ronda perfecta siempre cae justo en el tope
-  // (100/200/300) sin que el redondeo por pregunta lo deje corto o se pase.
-  const scoreScale = DIFFICULTY_MAX_SCORE[state.difficulty] / (IDENTIFY_ROUND_LENGTH * 50);
+  // (100/200/300 en identificar, 100 en el sonido del día) sin que el redondeo por
+  // pregunta lo deje corto o se pase. El sonido del día es una sola "pregunta" (raw máx 50).
+  const roundMaxRaw = state.mode === "sound" ? 50 : IDENTIFY_ROUND_LENGTH * 50;
+  const targetMaxScore = state.mode === "sound" ? SOUND_MAX_SCORE : DIFFICULTY_MAX_SCORE[state.difficulty];
+  const scoreScale = targetMaxScore / roundMaxRaw;
   const speed = speedMultiplier(elapsedSpeedSeconds(), speedBonusConfig());
 
   if(allCorrect){
@@ -327,7 +380,7 @@ function checkIdentifyAttempt(q){
   document.getElementById("score-display").textContent = `${state.score} pts`;
   const attemptNumEl = document.getElementById("attempt-num");
   if(attemptNumEl) attemptNumEl.textContent = state.attempt;
-  updateScanMeta(q);
+  if(state.mode === "identify") updateScanMeta(q);
   startSpeedTimer();
 }
 
@@ -428,7 +481,7 @@ function checkSimpleAnswer(q){
 // ---------- comprobar / avanzar ----------
 function checkAnswer(){
   const q = currentQuestion();
-  if(state.mode === "identify") checkIdentifyAttempt(q);
+  if(state.mode === "identify" || state.mode === "sound") checkIdentifyAttempt(q);
   else checkSimpleAnswer(q);
 }
 
@@ -443,12 +496,15 @@ function nextQuestion(){
 
 function endRound(){
   document.getElementById("progress-fill").style.width = "100%";
-  const max = state.mode === "identify"
-    ? DIFFICULTY_MAX_SCORE[state.difficulty]
-    : state.questions.length * POINTS_SIMPLE;
+  let max;
+  if(state.mode === "identify") max = DIFFICULTY_MAX_SCORE[state.difficulty];
+  else if(state.mode === "sound") max = SOUND_MAX_SCORE;
+  else max = state.questions.length * POINTS_SIMPLE;
   document.getElementById("results-score").textContent = `${state.score} pts`;
   document.getElementById("results-detail").textContent = t("resultsMax", { max });
+  document.getElementById("btn-replay").classList.toggle("hidden", state.mode === "sound");
   showScreen("screen-results");
+  if(state.mode === "sound") saveSoundPlayState({ score: state.score });
   saveScoreIfLoggedIn();
 }
 
