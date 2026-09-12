@@ -39,7 +39,7 @@ const BRAND_MODELS = {
   "Lancia": ["Delta", "Ypsilon", "Stratos"],
   "Renault": ["Clio", "Megane", "4", "5", "Twingo", "Captur"],
   "Peugeot": ["208", "308", "3008", "205", "206"],
-  "Citroën": ["2CV", "C3", "C4", "Berlingo", "DS3"],
+  "Citroën": ["2CV", "C3", "C4", "Berlingo", "DS3", "DS"],
   "SEAT": ["Ibiza", "León", "Arona", "Ateca", "Marbella"],
   "Mini": ["Cooper", "Countryman", "Clubman"],
   "Jaguar": ["XE", "F-Type", "XF", "E-Type"],
