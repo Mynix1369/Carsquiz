@@ -2,7 +2,6 @@
 
 const IDENTIFY_ROUND_LENGTH = 6;
 const SIMPLE_ROUND_LENGTH = 8;
-const POINTS_SIMPLE = 20;
 
 const state = {
   mode: null,        // 'identify' | 'sound' | 'logo'
@@ -552,8 +551,14 @@ function checkSimpleAnswer(q){
   banner.classList.remove("hidden","ok","no");
 
   if(isCorrect){
+    // igual que en "Identifica el coche": el máximo de la ronda depende de la dificultad
+    // (100/200/300, DIFFICULTY_MAX_SCORE) y también hay bono de velocidad. Se acumula sin
+    // redondear en state.rawScore y se redondea solo al restar del total ya mostrado, para
+    // que una ronda perfecta y rápida caiga siempre justo en el máximo de esa dificultad.
+    const perQuestion = DIFFICULTY_MAX_SCORE[state.difficulty] / SIMPLE_ROUND_LENGTH;
     const speed = speedMultiplier(elapsedSpeedSeconds(), speedBonusConfig());
-    const points = Math.round(POINTS_SIMPLE * speed);
+    state.rawScore += perQuestion * speed;
+    const points = Math.round(state.rawScore) - state.score;
     state.score += points;
     banner.classList.add("ok");
     banner.textContent = t("msgSimpleCorrect", { brand: q.car.brand, points });
@@ -588,9 +593,8 @@ function nextQuestion(){
 function endRound(){
   document.getElementById("progress-fill").style.width = "100%";
   let max;
-  if(state.mode === "identify") max = DIFFICULTY_MAX_SCORE[state.difficulty];
-  else if(state.mode === "sound") max = SOUND_MAX_SCORE;
-  else max = state.questions.length * POINTS_SIMPLE;
+  if(state.mode === "identify" || state.mode === "logo") max = DIFFICULTY_MAX_SCORE[state.difficulty];
+  else max = SOUND_MAX_SCORE;
   document.getElementById("results-score").textContent = `${state.score} pts`;
   document.getElementById("results-detail").textContent = t("resultsMax", { max });
   document.getElementById("btn-replay").classList.toggle("hidden", state.mode === "sound");
