@@ -37,29 +37,6 @@ async function openLeaderboardForRound(){
   openLeaderboard();
 }
 
-// puntuación máxima posible para un modo+dificultad: en "Identifica el coche" la
-// dificultad cambia el máximo (100/200/300, ver DIFFICULTY_MAX_SCORE), así que un
-// mismo desempeño vale más puntos en difícil que en fácil. En "Logos" el máximo es
-// fijo pase lo que pase (misma puntuación por acierto en las tres dificultades), y en
-// "Por sonido" no hay dificultad. Se usa para pasar la puntuación de cada dificultad
-// a puntos "equivalentes en difícil" en la clasificación general (ver abajo).
-function maxScoreForModeDifficulty(mode, difficulty){
-  if(mode === "identify") return DIFFICULTY_MAX_SCORE[difficulty];
-  if(mode === "logo") return SIMPLE_ROUND_LENGTH * POINTS_SIMPLE;
-  return SOUND_MAX_SCORE;
-}
-
-// escala de referencia de la clasificación general: el máximo de la dificultad más
-// alta (300 en Identificar). Una puntuación de fácil o medio se reescala a "cuántos
-// puntos habría valido con esa misma precisión jugando en difícil", así que se siguen
-// mostrando puntos normales (no un porcentaje) y la comparación entre dificultades es
-// justa. En Logos el máximo ya es el mismo en las tres dificultades, así que esta
-// reescala no cambia nada — los puntos en bruto ya eran justos ahí.
-function generalScaleMax(mode){
-  if(mode === "identify") return DIFFICULTY_MAX_SCORE.hard;
-  return SIMPLE_ROUND_LENGTH * POINTS_SIMPLE;
-}
-
 async function loadLeaderboard(){
   const list = document.getElementById("leaderboard-list");
 
@@ -104,19 +81,14 @@ async function loadLeaderboard(){
 
   let rows;
   if(isGeneral){
-    // como el máximo posible depende de la dificultad, comparar puntos en bruto
-    // entre dificultades sería injusto (difícil da hasta 3x más puntos por el mismo
-    // acierto en Identifica el coche) — cada fila se reescala a "puntos equivalentes
-    // en difícil" (ver generalScaleMax) y, si un jugador jugó varias dificultades
-    // hoy, nos quedamos con su mejor resultado ya reescalado.
+    // "General" = la mejor puntuación en bruto de cada jugador entre fácil/medio/difícil,
+    // sin ningún cálculo — si jugó varias dificultades hoy, se queda la más alta.
     const bestByUser = new Map();
-    const scaleMax = generalScaleMax(lbMode);
     data.forEach(row => {
-      const scaledScore = (row.score / maxScoreForModeDifficulty(lbMode, row.difficulty)) * scaleMax;
       const prev = bestByUser.get(row.user_id);
-      if(!prev || scaledScore > prev.scaledScore) bestByUser.set(row.user_id, { ...row, scaledScore });
+      if(!prev || row.score > prev.score) bestByUser.set(row.user_id, row);
     });
-    rows = [...bestByUser.values()].sort((a, b) => b.scaledScore - a.scaledScore).slice(0, 10);
+    rows = [...bestByUser.values()].sort((a, b) => b.score - a.score).slice(0, 10);
   } else {
     rows = data;
   }
@@ -125,7 +97,7 @@ async function loadLeaderboard(){
     const rank = i + 1;
     const isMe = row.user_id === currentUser?.id;
     const podiumClass = rank <= 3 ? `podium-${rank}` : "";
-    const scoreLabel = `${Math.round(isGeneral ? row.scaledScore : row.score)} pts`;
+    const scoreLabel = `${row.score} pts`;
     const diffKey = "diff" + row.difficulty.charAt(0).toUpperCase() + row.difficulty.slice(1);
     const diffTag = isGeneral ? `<span class="lb-diff-tag">${t(diffKey)}</span>` : "";
     return `
