@@ -1,0 +1,541 @@
+// Lógica del juego: estados de pantalla, generación de preguntas, comprobación de respuestas.
+
+const IDENTIFY_ROUND_LENGTH = 6;
+const SIMPLE_ROUND_LENGTH = 8;
+const POINTS_SIMPLE = 20;
+
+const state = {
+  mode: null,        // 'identify' | 'sound' | 'logo'
+  difficulty: null,  // 'easy' | 'medium' | 'hard' (solo modo identify)
+  questions: [],
+  index: 0,
+  score: 0,
+  rawScore: 0,  // acumulado sin escalar por dificultad (solo modo identify), 50 pts máx. por pregunta
+  attempt: 1,
+  attemptStartTime: 0,  // performance.now() de cuando empezó el intento actual, para el bono de velocidad
+  history: [],
+  resolved: false,
+  selectedBrand: null,
+  scoreSaved: false,  // evita guardar dos veces la puntuación de la misma ronda
+};
+
+// ---------- utilidades ----------
+function shuffle(arr){
+  const a = [...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+// ---------- construir ronda ----------
+function buildQuestions(mode, difficulty){
+  const n = mode === "identify" ? IDENTIFY_ROUND_LENGTH : SIMPLE_ROUND_LENGTH;
+  if(mode === "logo"){
+    const pool = LOGO_BRANDS.filter(b => LOGO_DIFFICULTY[b] === difficulty);
+    return shuffle(pool).slice(0, n).map(brand => ({ car: { brand } }));
+  }
+  if(mode !== "identify") return shuffle(CARS).slice(0, n).map(car => ({ car }));
+
+  // mientras vayamos sustituyendo placeholders por fotos reales, priorizamos
+  // los coches que ya tienen foto real para que aparezcan siempre primero.
+  const withPhoto = shuffle(CARS.filter(c => c.image));
+  const withoutPhoto = shuffle(CARS.filter(c => !c.image));
+  return [...withPhoto, ...withoutPhoto].slice(0, n).map(car => ({ car }));
+}
+
+// ---------- bono de velocidad ----------
+function speedBonusConfig(){
+  if(state.mode === "identify") return SPEED_BONUS.identify[state.difficulty];
+  if(state.mode === "logo") return SPEED_BONUS.logo[state.difficulty];
+  return SPEED_BONUS.sound;
+}
+
+function speedMultiplier(elapsedSeconds, cfg){
+  if(elapsedSeconds <= cfg.full) return 1;
+  if(elapsedSeconds >= cfg.zero) return SPEED_BONUS_FLOOR;
+  const p = (elapsedSeconds - cfg.full) / (cfg.zero - cfg.full);
+  return 1 - p * (1 - SPEED_BONUS_FLOOR);
+}
+
+function elapsedSpeedSeconds(){
+  return (performance.now() - state.attemptStartTime) / 1000;
+}
+
+// arranca el cronómetro del intento actual y reinicia la barra visual: se queda llena
+// mientras dura la ventana de bono máximo ("full") y se vacía con una transición CSS lineal.
+function startSpeedTimer(){
+  state.attemptStartTime = performance.now();
+  const bar = document.getElementById("speed-bar");
+  if(!bar) return;
+  bar.style.transition = "none";
+  bar.style.width = "100%";
+  void bar.offsetWidth;
+  const cfg = speedBonusConfig();
+  bar.style.transition = `width ${cfg.full}s linear`;
+  bar.style.width = "0%";
+}
+
+// ---------- pantallas ----------
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+function startRound(mode, difficulty){
+  state.mode = mode;
+  state.difficulty = difficulty || null;
+  state.questions = buildQuestions(mode, difficulty);
+  state.index = 0;
+  state.score = 0;
+  state.rawScore = 0;
+  state.scoreSaved = false;
+  showScreen("screen-game");
+  renderQuestion();
+}
+
+function currentQuestion(){ return state.questions[state.index]; }
+
+// ---------- render pregunta ----------
+function renderQuestion(){
+  state.attempt = 1;
+  state.history = [];
+  state.resolved = false;
+  state.selectedBrand = null;
+
+  const q = currentQuestion();
+  document.getElementById("progress-fill").style.width = `${((state.index)/state.questions.length)*100}%`;
+  document.getElementById("progress-text").textContent = t("progressText", { current: state.index+1, total: state.questions.length });
+  document.getElementById("score-display").textContent = `${state.score} pts`;
+
+  document.getElementById("feedback-banner").className = "feedback-banner hidden";
+  document.getElementById("btn-next").classList.add("hidden");
+  const checkBtn = document.getElementById("btn-check");
+  checkBtn.classList.remove("hidden");
+  checkBtn.disabled = false;
+
+  renderStimulus(q);
+  if(state.mode === "identify") renderIdentifyForm(q);
+  else renderSimpleForm(q);
+  startSpeedTimer();
+}
+
+function renderStimulus(q){
+  const area = document.getElementById("stimulus-area");
+  area.innerHTML = "";
+
+  if(state.mode === "identify"){
+    const focus = q.car.focus || PART_FOCUS[q.car.part];
+    const src = q.car.image || buildCarImageUri(q.car);
+    const frame = document.createElement("div");
+    frame.className = "scan-frame";
+    frame.innerHTML = `
+      <div class="scan-view">
+        <img id="quiz-img" src="${src}" style="transform-origin:${focus.x}% ${focus.y}%;" />
+        <div class="corner tl"></div><div class="corner tr"></div>
+        <div class="corner bl"></div><div class="corner br"></div>
+      </div>
+      <div class="scan-meta">
+        <span>${t("scanCropLabel")} <span id="scan-zoom" class="scan-part"></span> &middot; <span id="scan-part-label"></span></span>
+        <div id="scan-dots" class="attempt-dots"></div>
+      </div>`;
+    area.appendChild(frame);
+    const p = document.createElement("p");
+    p.className = "hint-text";
+    p.textContent = t("identifyHint");
+    area.appendChild(p);
+    if(q.car.credit){
+      const credit = document.createElement("p");
+      credit.className = "photo-credit";
+      credit.textContent = q.car.credit;
+      area.appendChild(credit);
+    }
+    updateScanMeta(q);
+    return;
+  }
+
+  if(state.mode === "sound"){
+    const box = document.createElement("div");
+    box.className = "sound-box";
+    box.innerHTML = `
+      <button id="play-sound-btn" class="play-btn">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <p class="hint-text">${t("soundHint")}</p>`;
+    area.appendChild(box);
+    document.getElementById("play-sound-btn").addEventListener("click", () => playCarSound(q.car));
+    playCarSound(q.car);
+    return;
+  }
+
+  // logo
+  const box = document.createElement("div");
+  box.className = "logo-box";
+  box.innerHTML = `<img src="${buildLogoUri(q.car.brand)}" />`;
+  area.appendChild(box);
+  const p = document.createElement("p");
+  p.className = "hint-text";
+  p.textContent = t("logoHint");
+  area.appendChild(p);
+}
+
+function updateScanMeta(q){
+  const zoom = ZOOM_SCHEDULE[state.difficulty][state.attempt-1];
+  const zoomEl = document.getElementById("scan-zoom");
+  if(zoomEl) zoomEl.textContent = `${zoom.toFixed(1)}×`;
+  const partEl = document.getElementById("scan-part-label");
+  if(partEl) partEl.textContent = translatePart(q.car.part);
+  const dotsEl = document.getElementById("scan-dots");
+  if(dotsEl){
+    dotsEl.innerHTML = Array.from({length: MAX_ATTEMPTS}).map((_, i) =>
+      `<span class="${i < state.attempt-1 ? "used" : ""}"></span>`).join("");
+  }
+  const img = document.getElementById("quiz-img");
+  if(img) img.style.transform = `scale(${zoom})`;
+}
+
+// ---------- formulario modo "identify" (marca / modelo / país / año) ----------
+function renderIdentifyForm(q){
+  const area = document.getElementById("answer-area");
+  area.innerHTML = `
+    <div class="attempts-info">
+      <span>${t("attemptLabel", { n: `<strong id="attempt-num">1</strong>`, max: MAX_ATTEMPTS })}</span>
+      <span class="legend"><span class="dot ok"></span>${t("legendCorrect")} <span class="dot no"></span>${t("legendIncorrect")}</span>
+    </div>
+    <div id="attempts-table" class="attempts-table"></div>
+    <div class="field-group">
+      <div class="field ac-field" data-field="brand">
+        <label>${t("fieldBrand")}</label>
+        <div class="autocomplete"><input type="text" id="f-brand" autocomplete="off" placeholder="${t("placeholderBrand")}" /><div class="ac-list hidden"></div></div>
+      </div>
+      <div class="field ac-field" data-field="model">
+        <label>${t("fieldModel")}</label>
+        <div class="autocomplete"><input type="text" id="f-model" autocomplete="off" placeholder="${t("placeholderModel")}" /><div class="ac-list hidden"></div></div>
+      </div>
+      <div class="field ac-field" data-field="country">
+        <label>${t("fieldCountry")}</label>
+        <div class="autocomplete"><input type="text" id="f-country" autocomplete="off" placeholder="${t("placeholderCountry")}" /><div class="ac-list hidden"></div></div>
+      </div>
+      <div class="field" data-field="year">
+        <label>${t("fieldYear")} <span class="field-hint">(${t("yearsTolerance", { n: YEAR_TOLERANCE[state.difficulty] })})</span></label>
+        <input type="text" id="f-year" inputmode="numeric" autocomplete="off" placeholder="${t("placeholderYear")}" />
+      </div>
+    </div>`;
+
+  attachAutocomplete(
+    area.querySelector('[data-field="brand"] .autocomplete'),
+    () => BRANDS,
+    (val) => { state.selectedBrand = val; }
+  );
+  attachAutocomplete(
+    area.querySelector('[data-field="model"] .autocomplete'),
+    () => modelOptions((state.selectedBrand && BRAND_MODELS[state.selectedBrand]) ? BRAND_MODELS[state.selectedBrand] : ALL_MODELS),
+    null
+  );
+  attachAutocomplete(
+    area.querySelector('[data-field="country"] .autocomplete'),
+    () => countryOptions(),
+    null
+  );
+
+  renderAttemptsTable();
+}
+
+function renderAttemptsTable(){
+  const el = document.getElementById("attempts-table");
+  if(!el) return;
+  const fields = ["brand","model","country","year"];
+  el.innerHTML = `
+    <div class="attempt-row attempt-header">
+      <div class="attempt-cell">${t("fieldBrand")}</div>
+      <div class="attempt-cell">${t("fieldModel")}</div>
+      <div class="attempt-cell">${t("fieldCountry")}</div>
+      <div class="attempt-cell">${t("fieldYear")}</div>
+    </div>
+    ${Array.from({length: MAX_ATTEMPTS}).map((_, i) => {
+      const h = state.history[i];
+      return `<div class="attempt-row">
+        ${fields.map(f => h ? `
+          <div class="attempt-cell">
+            <span class="attempt-val ${h.correct[f] ? "ok" : "no"}"><span class="dot"></span>${h.vals[f] || "—"}</span>
+          </div>` : `
+          <div class="attempt-cell">
+            <span class="dot pending"></span>
+          </div>`).join("")}
+      </div>`;
+    }).join("")}`;
+}
+
+function checkIdentifyAttempt(q){
+  const vals = {
+    brand: document.getElementById("f-brand").value,
+    model: document.getElementById("f-model").value,
+    country: document.getElementById("f-country").value,
+    year: document.getElementById("f-year").value,
+  };
+  const yearGuess = parseInt(vals.year.trim(), 10);
+  const correct = {
+    brand: vals.brand.trim() !== "" && normalize(vals.brand) === normalize(q.car.brand),
+    model: vals.model.trim() !== "" && normalize(vals.model) === normalize(translateModel(q.car.model)),
+    country: vals.country.trim() !== "" && normalize(vals.country) === normalize(translateCountry(q.car.country)),
+    year: !isNaN(yearGuess) && Math.abs(yearGuess - q.car.year) <= YEAR_TOLERANCE[state.difficulty],
+  };
+
+  state.history.push({ vals, correct });
+  renderAttemptsTable();
+
+  const allCorrect = correct.brand && correct.model && correct.country && correct.year;
+  const banner = document.getElementById("feedback-banner");
+  banner.classList.remove("hidden","ok","no");
+
+  // la puntuación se acumula sin escalar (máx. 50 pts/pregunta) y solo al final se convierte
+  // a la escala de la dificultad; así una ronda perfecta siempre cae justo en el tope
+  // (100/200/300) sin que el redondeo por pregunta lo deje corto o se pase.
+  const scoreScale = DIFFICULTY_MAX_SCORE[state.difficulty] / (IDENTIFY_ROUND_LENGTH * 50);
+  const speed = speedMultiplier(elapsedSpeedSeconds(), speedBonusConfig());
+
+  if(allCorrect){
+    const rawPoints = Math.max(50 - (state.attempt-1)*10, 10) * speed;
+    state.rawScore += rawPoints;
+    const points = Math.round(state.rawScore * scoreScale) - state.score;
+    state.score += points;
+    banner.classList.add("ok");
+    banner.textContent = t("msgPerfect", { attempt: state.attempt, points });
+    finishIdentifyQuestion(true);
+    return;
+  }
+
+  triggerFailFeedback();
+  scrollToStimulus();
+
+  if(state.attempt >= MAX_ATTEMPTS){
+    const fieldsOk = Object.values(correct).filter(Boolean).length;
+    const rawPoints = fieldsOk * 5 * speed;
+    state.rawScore += rawPoints;
+    const points = Math.round(state.rawScore * scoreScale) - state.score;
+    state.score += points;
+    banner.classList.add("no");
+    banner.textContent = t("msgOutOfAttempts", { brand: q.car.brand, model: translateModel(q.car.model), country: translateCountry(q.car.country), year: q.car.year, points });
+    finishIdentifyQuestion(false);
+    return;
+  }
+
+  state.attempt++;
+  banner.classList.add("no");
+  banner.textContent = t("msgTryAgain");
+  document.getElementById("score-display").textContent = `${state.score} pts`;
+  const attemptNumEl = document.getElementById("attempt-num");
+  if(attemptNumEl) attemptNumEl.textContent = state.attempt;
+  updateScanMeta(q);
+  startSpeedTimer();
+}
+
+// sacude la pantalla y destella un aviso rojo cuando fallas una respuesta, en cualquier modo.
+// se sacude .screen.active (no #app): si el transform se aplicara a #app, ese elemento
+// pasaría a ser el contenedor de posicionamiento de .app-bg/.fail-flash (fixed) y se
+// quedarían encajonados en la columna de contenido en vez de cubrir toda la ventana.
+function triggerFailFeedback(){
+  const screen = document.querySelector(".screen.active");
+  if(screen){
+    screen.classList.remove("shake");
+    void screen.offsetWidth;
+    screen.classList.add("shake");
+  }
+
+  const flash = document.getElementById("fail-flash");
+  flash.classList.remove("active");
+  void flash.offsetWidth;
+  flash.classList.add("active");
+}
+
+// al fallar en modo "identify", sube la pantalla sola hasta la imagen para que se vea
+// el recorte actualizado (o el coche entero, si era el último intento) sin tener que
+// bajar el teclado o desplazarse a mano. Se anima a mano con requestAnimationFrame en vez
+// de scrollIntoView({behavior:"smooth"}) porque ese modo nativo no es fiable en todos los
+// navegadores/WebViews (p. ej. algunas versiones de WebView de Android al empaquetar con Capacitor).
+function scrollToStimulus(){
+  const el = document.getElementById("stimulus-area");
+  if(!el) return;
+  const target = Math.max(0, el.getBoundingClientRect().top + window.scrollY - 12);
+  const start = window.scrollY;
+  const dist = target - start;
+  if(Math.abs(dist) < 2) return;
+  const duration = 450;
+  const startTime = performance.now();
+  function step(now){
+    const t = Math.min(1, (now - startTime) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    window.scrollTo(0, start + dist * eased);
+    if(t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function finishIdentifyQuestion(success){
+  state.resolved = true;
+  document.getElementById("score-display").textContent = `${state.score} pts`;
+  document.getElementById("btn-check").classList.add("hidden");
+  document.getElementById("btn-next").classList.remove("hidden");
+  document.querySelectorAll("#answer-area input").forEach(i => i.disabled = true);
+  // si aciertas, la imagen se queda en el tope de zoom de la dificultad (en difícil nunca
+  // llega a verse el coche entero); si fallas los 5 intentos, la cámara retrocede del todo
+  // y se revela el coche completo como consuelo.
+  const img = document.getElementById("quiz-img");
+  if(img) img.style.transform = success
+    ? `scale(${ZOOM_SCHEDULE[state.difficulty][MAX_ATTEMPTS-1]})`
+    : "scale(1)";
+  const dotsEl = document.getElementById("scan-dots");
+  if(dotsEl) dotsEl.innerHTML = Array.from({length: MAX_ATTEMPTS}).map(() => `<span class="used"></span>`).join("");
+}
+
+// ---------- formulario simple (modo sonido / logo: solo marca) ----------
+function renderSimpleForm(q){
+  const area = document.getElementById("answer-area");
+  area.innerHTML = `
+    <div class="field ac-field" data-field="brand">
+      <label>${t("fieldBrand")}</label>
+      <div class="autocomplete"><input type="text" id="f-brand" autocomplete="off" placeholder="${t("placeholderBrand")}" /><div class="ac-list hidden"></div></div>
+    </div>`;
+  attachAutocomplete(area.querySelector('[data-field="brand"] .autocomplete'), () => (state.mode === "logo" ? LOGO_BRANDS : BRANDS), null);
+}
+
+function checkSimpleAnswer(q){
+  const val = document.getElementById("f-brand").value;
+  const isCorrect = val.trim() !== "" && normalize(val) === normalize(q.car.brand);
+
+  const banner = document.getElementById("feedback-banner");
+  banner.classList.remove("hidden","ok","no");
+
+  if(isCorrect){
+    const speed = speedMultiplier(elapsedSpeedSeconds(), speedBonusConfig());
+    const points = Math.round(POINTS_SIMPLE * speed);
+    state.score += points;
+    banner.classList.add("ok");
+    banner.textContent = t("msgSimpleCorrect", { brand: q.car.brand, points });
+  } else {
+    triggerFailFeedback();
+    banner.classList.add("no");
+    banner.textContent = t("msgSimpleWrong", { brand: q.car.brand });
+  }
+
+  document.getElementById("score-display").textContent = `${state.score} pts`;
+  document.getElementById("f-brand").disabled = true;
+  document.getElementById("btn-check").classList.add("hidden");
+  document.getElementById("btn-next").classList.remove("hidden");
+}
+
+// ---------- comprobar / avanzar ----------
+function checkAnswer(){
+  const q = currentQuestion();
+  if(state.mode === "identify") checkIdentifyAttempt(q);
+  else checkSimpleAnswer(q);
+}
+
+function nextQuestion(){
+  state.index++;
+  if(state.index >= state.questions.length){
+    endRound();
+    return;
+  }
+  renderQuestion();
+}
+
+function endRound(){
+  document.getElementById("progress-fill").style.width = "100%";
+  const max = state.mode === "identify"
+    ? DIFFICULTY_MAX_SCORE[state.difficulty]
+    : state.questions.length * POINTS_SIMPLE;
+  document.getElementById("results-score").textContent = `${state.score} pts`;
+  document.getElementById("results-detail").textContent = t("resultsMax", { max });
+  showScreen("screen-results");
+  saveScoreIfLoggedIn();
+}
+
+// si hay sesión iniciada, sube la puntuación de la ronda a la clasificación diaria,
+// pero solo se guarda un récord por modo+dificultad+día: si ya tenías uno hoy, se
+// sustituye únicamente si la nueva puntuación es mejor. No hay validación en servidor
+// (a propósito, por ahora): es para jugar con amigos, no hay premio real de por medio.
+async function saveScoreIfLoggedIn(){
+  if(typeof isLoggedIn !== "function" || !isLoggedIn()) return;
+  if(state.scoreSaved) return;
+
+  const difficulty = state.mode === "sound" ? "none" : state.difficulty;
+  const today = new Date().toISOString().slice(0, 10);
+
+  const { data: existing } = await sb.from("scores")
+    .select("id, score")
+    .eq("user_id", currentUser.id)
+    .eq("mode", state.mode)
+    .eq("difficulty", difficulty)
+    .eq("played_on", today)
+    .maybeSingle();
+
+  if(existing && existing.score >= state.score){
+    state.scoreSaved = true; // ya tenías un récord igual o mejor hoy, no hace falta tocar nada
+    return;
+  }
+
+  const { error } = await sb.from("scores").upsert({
+    user_id: currentUser.id,
+    mode: state.mode,
+    difficulty,
+    score: state.score,
+    played_on: today,
+  }, { onConflict: "user_id,mode,difficulty,played_on" });
+
+  if(error){ console.error("No se pudo guardar la puntuación:", error); return; }
+  state.scoreSaved = true;
+}
+
+// ---------- wiring UI ----------
+document.addEventListener("DOMContentLoaded", () => {
+
+  // acordeón de modos: al pulsar la cabecera, se abre ese modo y se cierran los demás
+  // (la tarjeta de clasificación no tiene panel desplegable, así que se excluye)
+  document.querySelectorAll(".mode-card:not(.mode-card-leaderboard) .mode-head").forEach(head => {
+    head.addEventListener("click", () => {
+      const card = head.closest(".mode-card");
+      const wasOpen = card.classList.contains("open");
+      document.querySelectorAll(".mode-card.open").forEach(c => {
+        c.classList.remove("open");
+        c.querySelector(".mode-head").setAttribute("aria-expanded", "false");
+      });
+      if(!wasOpen){
+        card.classList.add("open");
+        head.setAttribute("aria-expanded", "true");
+      }
+    });
+  });
+
+  // selector de dificultad (solo modo identificar)
+  document.querySelectorAll(".dial-card").forEach(dial => {
+    dial.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const group = dial.closest(".dials");
+      group.querySelectorAll(".dial-card").forEach(d => d.classList.remove("active"));
+      dial.classList.add("active");
+    });
+  });
+
+  // botón "Arrancar" de cada modo
+  document.querySelectorAll(".ignition[data-start]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const mode = btn.dataset.start;
+      let difficulty = null;
+      if(mode === "identify" || mode === "logo"){
+        const panel = btn.closest(".mode-panel");
+        const active = panel.querySelector(".dial-card.active") || panel.querySelector(".dial-card");
+        difficulty = active.dataset.diff;
+      }
+      startRound(mode, difficulty);
+    });
+  });
+
+  document.getElementById("btn-check").addEventListener("click", checkAnswer);
+  document.getElementById("btn-next").addEventListener("click", nextQuestion);
+  document.getElementById("btn-quit").addEventListener("click", () => showScreen("screen-menu"));
+  document.getElementById("btn-replay").addEventListener("click", () => startRound(state.mode, state.difficulty));
+  document.getElementById("btn-menu").addEventListener("click", () => showScreen("screen-menu"));
+});

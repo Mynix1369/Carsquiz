@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Car Quiz</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="css/styles.css?v=25">
+</head>
+<body>
+
+<div id="app">
+
+  <div class="app-bg" aria-hidden="true">
+    <div class="bg-grid"></div>
+    <div class="spotlight spotlight-1"></div>
+    <div class="spotlight spotlight-2"></div>
+    <div class="spotlight spotlight-3"></div>
+    <div class="blob blob-info"></div>
+    <div class="blob blob-amber-2"></div>
+    <div class="vignette"></div>
+  </div>
+
+  <div class="fail-flash" id="fail-flash" aria-hidden="true"></div>
+
+  <!-- MENU PRINCIPAL -->
+  <section id="screen-menu" class="screen active">
+    <header class="app-header">
+      <div class="header-top-row">
+        <div id="account-badge" class="account-badge hidden">
+          <span id="account-name" class="account-name"></span>
+          <button type="button" id="account-edit-name" class="account-edit" title="Cambiar nombre" aria-label="Cambiar nombre">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </button>
+          <button type="button" id="account-logout" class="account-logout" title="Cerrar sesión" aria-label="Cerrar sesión">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+          </button>
+        </div>
+        <div class="lang-switch">
+          <button type="button" data-lang="en">
+            <svg class="flag" viewBox="0 0 24 16" aria-hidden="true">
+              <rect width="24" height="16" fill="#fff"/>
+              <rect y="0" width="24" height="2" fill="#B22234"/>
+              <rect y="4" width="24" height="2" fill="#B22234"/>
+              <rect y="8" width="24" height="2" fill="#B22234"/>
+              <rect y="12" width="24" height="2" fill="#B22234"/>
+              <rect x="0" y="0" width="10" height="9" fill="#3C3B6E"/>
+            </svg>
+            EN
+          </button>
+          <button type="button" data-lang="es">
+            <svg class="flag" viewBox="0 0 24 16" aria-hidden="true">
+              <rect width="24" height="16" fill="#AA151B"/>
+              <rect y="4" width="24" height="8" fill="#F1BF00"/>
+            </svg>
+            ES
+          </button>
+        </div>
+      </div>
+      <h1>Quiz <span>Coches</span></h1>
+      <div class="header-tick"></div>
+      <p class="subtitle" data-i18n="subtitle">Adivina el coche antes de quedarte sin intentos</p>
+    </header>
+
+    <div class="modes-list">
+
+      <div class="mode-card" data-mode="identify">
+        <button class="mode-head" aria-expanded="false" aria-controls="panel-identify">
+          <div class="mode-media" data-slot="identify">
+            <img src="assets/ui/mode-identify.jpg" alt="" />
+          </div>
+          <div class="mode-info">
+            <h2 data-i18n="modeIdentifyTitle">Identifica el coche</h2>
+            <p data-i18n="modeIdentifyDesc">Marca, modelo, país y año a partir de un recorte de la imagen</p>
+          </div>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="mode-panel-wrap" id="panel-identify">
+          <div class="mode-panel-inner">
+            <div class="mode-panel">
+              <div class="dials">
+                <button class="dial-card" data-diff="easy">
+                  <div class="gauge">
+                    <svg viewBox="0 0 66 38">
+                      <path d="M5 34 A28 28 0 0 1 61 34" fill="none" stroke="#3c331f" stroke-width="4.5" stroke-linecap="round"/>
+                      <path d="M5 34 A28 28 0 0 1 26 8.3" fill="none" stroke="#7fbf7a" stroke-width="4.5" stroke-linecap="round"/>
+                      <line x1="33" y1="34" x2="17" y2="14" stroke="#f3eee3" stroke-width="2" stroke-linecap="round"/>
+                      <circle cx="33" cy="34" r="2.6" fill="#f3eee3"/>
+                    </svg>
+                  </div>
+                  <div class="dial-label" data-i18n="diffEasy">Fácil</div>
+                  <div class="dial-sub" data-diff-years="easy">&plusmn;5 años</div>
+                </button>
+                <button class="dial-card active" data-diff="medium">
+                  <div class="gauge">
+                    <svg viewBox="0 0 66 38">
+                      <path d="M5 34 A28 28 0 0 1 61 34" fill="none" stroke="#3c331f" stroke-width="4.5" stroke-linecap="round"/>
+                      <path d="M5 34 A28 28 0 0 1 48 11" fill="none" stroke="#f2a33b" stroke-width="4.5" stroke-linecap="round"/>
+                      <line x1="33" y1="34" x2="46" y2="12" stroke="#f3eee3" stroke-width="2" stroke-linecap="round"/>
+                      <circle cx="33" cy="34" r="2.6" fill="#f3eee3"/>
+                    </svg>
+                  </div>
+                  <div class="dial-label" data-i18n="diffMedium">Medio</div>
+                  <div class="dial-sub" data-diff-years="medium">&plusmn;3 años</div>
+                </button>
+                <button class="dial-card" data-diff="hard">
+                  <div class="gauge">
+                    <svg viewBox="0 0 66 38">
+                      <path d="M5 34 A28 28 0 0 1 61 34" fill="none" stroke="#3c331f" stroke-width="4.5" stroke-linecap="round"/>
+                      <path d="M5 34 A28 28 0 0 1 60 28" fill="none" stroke="#d9695a" stroke-width="4.5" stroke-linecap="round"/>
+                      <line x1="33" y1="34" x2="58" y2="26" stroke="#f3eee3" stroke-width="2" stroke-linecap="round"/>
+                      <circle cx="33" cy="34" r="2.6" fill="#f3eee3"/>
+                    </svg>
+                  </div>
+                  <div class="dial-label" data-i18n="diffHard">Difícil</div>
+                  <div class="dial-sub" data-diff-years="hard">&plusmn;2 años</div>
+                </button>
+              </div>
+              <button class="ignition" data-start="identify" data-i18n="btnStart">Comenzar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mode-card" data-mode="sound">
+        <button class="mode-head" aria-expanded="false" aria-controls="panel-sound">
+          <div class="mode-media" data-slot="sound">
+            <img src="assets/ui/mode-sound.jpg" alt="" />
+          </div>
+          <div class="mode-info">
+            <h2 data-i18n="modeSoundTitle">Por sonido</h2>
+            <p data-i18n="modeSoundDesc">Reconoce el coche solo por cómo suena su motor</p>
+          </div>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="mode-panel-wrap" id="panel-sound">
+          <div class="mode-panel-inner">
+            <div class="mode-panel mode-panel-simple">
+              <button class="ignition" data-start="sound" data-i18n="btnStart">Comenzar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mode-card" data-mode="logo">
+        <button class="mode-head" aria-expanded="false" aria-controls="panel-logo">
+          <!-- TEMPORAL: este icono usa el escudo real de Porsche, pendiente de cambiar por uno propio -->
+          <div class="mode-media" data-slot="logo">
+            <img src="assets/ui/mode-logo.jpg" alt="" />
+          </div>
+          <div class="mode-info">
+            <h2 data-i18n="modeLogoTitle">Logos</h2>
+            <p data-i18n="modeLogoDesc">Solo el emblema. Adivina la marca a la primera</p>
+          </div>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="mode-panel-wrap" id="panel-logo">
+          <div class="mode-panel-inner">
+            <div class="mode-panel">
+              <div class="dials">
+                <button class="dial-card" data-diff="easy">
+                  <div class="gauge">
+                    <svg viewBox="0 0 66 38">
+                      <path d="M5 34 A28 28 0 0 1 61 34" fill="none" stroke="#3c331f" stroke-width="4.5" stroke-linecap="round"/>
+                      <path d="M5 34 A28 28 0 0 1 26 8.3" fill="none" stroke="#7fbf7a" stroke-width="4.5" stroke-linecap="round"/>
+                      <line x1="33" y1="34" x2="17" y2="14" stroke="#f3eee3" stroke-width="2" stroke-linecap="round"/>
+                      <circle cx="33" cy="34" r="2.6" fill="#f3eee3"/>
+                    </svg>
+                  </div>
+                  <div class="dial-label" data-i18n="diffEasy">Fácil</div>
+                </button>
+                <button class="dial-card active" data-diff="medium">
+                  <div class="gauge">
+                    <svg viewBox="0 0 66 38">
+                      <path d="M5 34 A28 28 0 0 1 61 34" fill="none" stroke="#3c331f" stroke-width="4.5" stroke-linecap="round"/>
+                      <path d="M5 34 A28 28 0 0 1 48 11" fill="none" stroke="#f2a33b" stroke-width="4.5" stroke-linecap="round"/>
+                      <line x1="33" y1="34" x2="46" y2="12" stroke="#f3eee3" stroke-width="2" stroke-linecap="round"/>
+                      <circle cx="33" cy="34" r="2.6" fill="#f3eee3"/>
+                    </svg>
+                  </div>
+                  <div class="dial-label" data-i18n="diffMedium">Medio</div>
+                </button>
+                <button class="dial-card" data-diff="hard">
+                  <div class="gauge">
+                    <svg viewBox="0 0 66 38">
+                      <path d="M5 34 A28 28 0 0 1 61 34" fill="none" stroke="#3c331f" stroke-width="4.5" stroke-linecap="round"/>
+                      <path d="M5 34 A28 28 0 0 1 60 28" fill="none" stroke="#d9695a" stroke-width="4.5" stroke-linecap="round"/>
+                      <line x1="33" y1="34" x2="58" y2="26" stroke="#f3eee3" stroke-width="2" stroke-linecap="round"/>
+                      <circle cx="33" cy="34" r="2.6" fill="#f3eee3"/>
+                    </svg>
+                  </div>
+                  <div class="dial-label" data-i18n="diffHard">Difícil</div>
+                </button>
+              </div>
+              <button class="ignition" data-start="logo" data-i18n="btnStart">Comenzar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mode-card mode-card-leaderboard" data-mode="leaderboard">
+        <button class="mode-head" id="btn-open-leaderboard">
+          <div class="mode-media leaderboard-icon">
+            <svg viewBox="0 0 48 48" fill="none" stroke="#f2a33b" stroke-width="2" aria-hidden="true">
+              <path d="M14 8h20v10a10 10 0 0 1-20 0V8z"/>
+              <path d="M14 11H8a4 4 0 0 0 4 8"/>
+              <path d="M34 11h6a4 4 0 0 1-4 8"/>
+              <path d="M24 28v7"/>
+              <path d="M17 40h14"/>
+              <path d="M17 40c0-3 3-4 7-4s7 1 7 4"/>
+            </svg>
+          </div>
+          <div class="mode-info">
+            <h2 data-i18n="modeLeaderboardTitle">Clasificación</h2>
+            <p data-i18n="modeLeaderboardDesc">Compite hoy con otros jugadores. Necesitas iniciar sesión</p>
+          </div>
+          <svg class="chev leaderboard-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- MODAL DE LOGIN -->
+  <div id="auth-modal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-box">
+      <button type="button" class="modal-close" data-close-modal aria-label="Cerrar">&times;</button>
+      <h2 data-i18n="authTitle">Inicia sesión</h2>
+      <p class="modal-sub" data-i18n="authSubtitle">Para ver y aparecer en la clasificación diaria</p>
+
+      <!-- oculto hasta que se configuren las credenciales de Google OAuth en Supabase -->
+      <button type="button" id="btn-google-signin" class="google-btn hidden">
+        <svg viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.8 32.4 29.3 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.8 0 5.3 1 7.3 2.7l5.7-5.7C33.6 6.5 29.1 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.4-.4-3.5z"/>
+          <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 19 13 24 13c2.8 0 5.3 1 7.3 2.7l5.7-5.7C33.6 6.5 29.1 4.5 24 4.5c-7.7 0-14.4 4.4-17.7 10.2z"/>
+          <path fill="#4CAF50" d="M24 43.5c5 0 9.5-1.9 12.9-5.1l-6-5c-1.9 1.3-4.3 2.1-6.9 2.1-5.3 0-9.7-3.5-11.3-8.4l-6.5 5C9.5 39 16.2 43.5 24 43.5z"/>
+          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.5l6 5C40.9 35.6 43.5 30.2 43.5 24c0-1.2-.1-2.4-.4-3.5z"/>
+        </svg>
+        <span data-i18n="btnGoogleSignIn">Continuar con Google</span>
+      </button>
+
+      <div class="modal-divider hidden"><span data-i18n="orDivider">o</span></div>
+
+      <form id="auth-email-form">
+        <input type="text" id="auth-username" class="hidden" autocomplete="nickname" maxlength="30" data-i18n-placeholder="placeholderUsername" placeholder="Nombre de usuario" />
+        <input type="email" id="auth-email" autocomplete="email" data-i18n-placeholder="placeholderEmail" placeholder="Correo electrónico" required />
+        <input type="password" id="auth-password" autocomplete="current-password" data-i18n-placeholder="placeholderPassword" placeholder="Contraseña" required minlength="6" />
+        <div id="auth-error" class="auth-error hidden"></div>
+        <button type="submit" id="btn-email-submit" class="ignition" data-i18n="btnLogIn">Entrar</button>
+      </form>
+      <p class="auth-switch">
+        <span id="auth-switch-text" data-i18n="authNoAccount">¿No tienes cuenta?</span>
+        <button type="button" id="btn-auth-toggle" data-i18n="btnSwitchToSignup">Regístrate</button>
+      </p>
+    </div>
+  </div>
+
+  <!-- PANTALLA DE CLASIFICACIÓN -->
+  <section id="screen-leaderboard" class="screen">
+    <header class="game-header">
+      <button id="btn-leaderboard-back" class="icon-btn" title="Volver" aria-label="Volver">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="progress-wrap">
+        <span class="progress-text lb-heading" data-i18n="leaderboardTitle">Clasificación de hoy</span>
+      </div>
+      <button id="btn-leaderboard-logout" class="icon-btn" title="Cerrar sesión" aria-label="Cerrar sesión">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      </button>
+    </header>
+
+    <div class="leaderboard-tabs" id="leaderboard-mode-tabs">
+      <button class="lb-tab active" data-lb-mode="identify" data-i18n="modeIdentifyTitle">Identifica el coche</button>
+      <button class="lb-tab" data-lb-mode="sound" data-i18n="modeSoundTitle">Por sonido</button>
+      <button class="lb-tab" data-lb-mode="logo" data-i18n="modeLogoTitle">Logos</button>
+    </div>
+    <div class="leaderboard-diff-tabs" id="leaderboard-diff-tabs">
+      <button class="lb-diff" data-lb-diff="easy" data-i18n="diffEasy">Fácil</button>
+      <button class="lb-diff active" data-lb-diff="medium" data-i18n="diffMedium">Medio</button>
+      <button class="lb-diff" data-lb-diff="hard" data-i18n="diffHard">Difícil</button>
+    </div>
+
+    <div id="leaderboard-list" class="leaderboard-list"></div>
+  </section>
+
+  <!-- PANTALLA DE JUEGO -->
+  <section id="screen-game" class="screen">
+    <header class="game-header">
+      <button id="btn-quit" class="icon-btn" title="Salir" aria-label="Salir">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+      <div class="progress-wrap">
+        <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+        <span id="progress-text" class="progress-text" data-i18n="progressText">Pregunta 1/10</span>
+      </div>
+      <div id="score-display" class="score-display">0 pts</div>
+    </header>
+
+    <div class="speed-bar-wrap" aria-hidden="true"><div id="speed-bar" class="speed-bar"></div></div>
+
+    <div class="game-body">
+      <div id="stimulus-area" class="stimulus-area">
+        <!-- imagen / audio / logo se inyecta aquí -->
+      </div>
+
+      <div id="feedback-banner" class="feedback-banner hidden"></div>
+
+      <div id="answer-area" class="answer-area">
+        <!-- campos de respuesta se inyectan aquí -->
+      </div>
+
+      <div class="game-actions">
+        <button id="btn-check" class="ignition" data-i18n="btnCheck">Comprobar</button>
+        <button id="btn-next" class="ignition hidden" data-i18n="btnNext">Siguiente</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANTALLA DE RESULTADOS -->
+  <section id="screen-results" class="screen">
+    <div class="results-box">
+      <p class="tag" data-i18n="resultsTag">Ronda terminada</p>
+      <div class="results-score" id="results-score">0 pts</div>
+      <p id="results-detail" class="results-detail"></p>
+      <div class="results-actions">
+        <button id="btn-replay" class="ignition" data-i18n="btnReplay">Jugar otra vez</button>
+        <button id="btn-view-leaderboard" class="btn-secondary" data-i18n="btnViewLeaderboard">Ver clasificación</button>
+        <button id="btn-menu" class="btn-secondary" data-i18n="btnMenu">Menú principal</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script src="js/data.js?v=25"></script>
+<script src="js/i18n.js?v=25"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js?v=25"></script>
+<script src="js/auth.js?v=25"></script>
+<script src="js/leaderboard.js?v=25"></script>
+<script src="js/audio.js?v=25"></script>
+<script src="js/visuals.js?v=25"></script>
+<script src="js/autocomplete.js?v=25"></script>
+<script src="js/game.js?v=25"></script>
+</body>
+</html>

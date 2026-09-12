@@ -1,0 +1,279 @@
+// Sistema de idiomas: inglés por defecto, español como alternativa. Se guarda en
+// localStorage para que se recuerde entre visitas. Los datos "de verdad" (marcas,
+// modelos, países) se guardan siempre en español en data.js como valor canónico;
+// aquí solo se traducen para mostrar en pantalla y para validar la respuesta cuando
+// el idioma activo es inglés.
+
+let currentLang = localStorage.getItem("qc_lang") || "en";
+
+const STRINGS = {
+  en: {
+    pageTitle: "Car Quiz",
+    titleMain: "Car",
+    titleAccent: "Quiz",
+    subtitle: "Guess the car before you run out of tries",
+
+    modeIdentifyTitle: "Identify the car",
+    modeIdentifyDesc: "Brand, model, country and year from a cropped photo",
+    modeSoundTitle: "By sound",
+    modeSoundDesc: "Recognize the car just by its engine sound",
+    modeLogoTitle: "Logos",
+    modeLogoDesc: "Just the badge. Guess the brand on sight",
+
+    diffEasy: "Easy",
+    diffMedium: "Medium",
+    diffHard: "Hard",
+    yearsTolerance: "±{n} years",
+    btnStart: "Start",
+
+    quitLabel: "Quit",
+    progressText: "Question {current}/{total}",
+
+    identifyHint: "Which car is this part from?",
+    soundHint: "Tap to hear the sample sound and guess the brand",
+    logoHint: "Which brand does this logo belong to?",
+    scanCropLabel: "Crop",
+
+    fieldBrand: "Brand",
+    fieldModel: "Model",
+    fieldCountry: "Country",
+    fieldYear: "Year",
+    placeholderBrand: "Type a brand...",
+    placeholderModel: "Type a model...",
+    placeholderCountry: "Type a country...",
+    placeholderYear: "E.g. 1975",
+    attemptLabel: "Attempt {n}/{max}",
+    legendCorrect: "Correct",
+    legendIncorrect: "Incorrect",
+
+    msgPerfect: "Perfect! You got it on attempt {attempt}. +{points} pts",
+    msgOutOfAttempts: "Out of attempts. It was a {brand} {model} ({country}, {year}). +{points} pts",
+    msgTryAgain: "Not yet. Here's a bit more of the image — try again.",
+    msgSimpleCorrect: "Correct! It's a {brand}. +{points} pts",
+    msgSimpleWrong: "Not quite. It was a {brand}.",
+
+    btnCheck: "Check",
+    btnNext: "Next",
+    btnReplay: "Play again",
+    btnViewLeaderboard: "Save score & view leaderboard",
+    btnMenu: "Main menu",
+
+    resultsTag: "Round over",
+    resultsMax: "Maximum possible score: {max} pts",
+
+    modeLeaderboardTitle: "Leaderboard",
+    modeLeaderboardDesc: "Compete with other players today. You need to sign in",
+    accountLogoutLabel: "Sign out",
+    accountEditNameLabel: "Change name",
+    placeholderUsername: "Choose a username",
+
+    authTitle: "Sign in",
+    authSubtitle: "To see and appear in today's leaderboard",
+    btnGoogleSignIn: "Continue with Google",
+    orDivider: "or",
+    placeholderEmail: "Email address",
+    placeholderPassword: "Password",
+    btnLogIn: "Log in",
+    btnSignUp: "Sign up",
+    authNoAccount: "Don't have an account?",
+    authHaveAccount: "Already have an account?",
+    btnSwitchToSignup: "Sign up",
+    btnSwitchToLogin: "Log in",
+    authCheckEmail: "Check your email to confirm your account.",
+
+    leaderboardTitle: "Today's leaderboard",
+    lbLoading: "Loading...",
+    lbError: "Couldn't load the leaderboard.",
+    lbEmpty: "Nobody's played today yet. Be the first!",
+    lbYouTag: "YOU",
+  },
+  es: {
+    pageTitle: "Quiz de Coches",
+    titleMain: "Quiz",
+    titleAccent: "Coches",
+    subtitle: "Adivina el coche antes de quedarte sin intentos",
+
+    modeIdentifyTitle: "Identifica el coche",
+    modeIdentifyDesc: "Marca, modelo, país y año a partir de un recorte de la imagen",
+    modeSoundTitle: "Por sonido",
+    modeSoundDesc: "Reconoce el coche solo por cómo suena su motor",
+    modeLogoTitle: "Logos",
+    modeLogoDesc: "Solo el emblema. Adivina la marca a la primera",
+
+    diffEasy: "Fácil",
+    diffMedium: "Medio",
+    diffHard: "Difícil",
+    yearsTolerance: "±{n} años",
+    btnStart: "Comenzar",
+
+    quitLabel: "Salir",
+    progressText: "Pregunta {current}/{total}",
+
+    identifyHint: "¿De qué coche es esta parte?",
+    soundHint: "Pulsa para escuchar el sonido de muestra y adivina la marca",
+    logoHint: "¿De qué marca es este logo de muestra?",
+    scanCropLabel: "Recorte",
+
+    fieldBrand: "Marca",
+    fieldModel: "Modelo",
+    fieldCountry: "País",
+    fieldYear: "Año",
+    placeholderBrand: "Escribe una marca...",
+    placeholderModel: "Escribe un modelo...",
+    placeholderCountry: "Escribe un país...",
+    placeholderYear: "Ej: 1975",
+    attemptLabel: "Intento {n}/{max}",
+    legendCorrect: "Correcto",
+    legendIncorrect: "Incorrecto",
+
+    msgPerfect: "¡Perfecto! Lo has adivinado en el intento {attempt}. +{points} pts",
+    msgOutOfAttempts: "Se acabaron los intentos. Era un {brand} {model} ({country}, {year}). +{points} pts",
+    msgTryAgain: "Todavía no. Aquí tienes un poco más de imagen — inténtalo de nuevo.",
+    msgSimpleCorrect: "¡Correcto! Es de la marca {brand}. +{points} pts",
+    msgSimpleWrong: "No exactamente. Era de la marca {brand}.",
+
+    btnCheck: "Comprobar",
+    btnNext: "Siguiente",
+    btnReplay: "Jugar otra vez",
+    btnViewLeaderboard: "Guardar y ver clasificación",
+    btnMenu: "Menú principal",
+
+    resultsTag: "Ronda terminada",
+    resultsMax: "Puntuación máxima posible: {max} pts",
+
+    modeLeaderboardTitle: "Clasificación",
+    modeLeaderboardDesc: "Compite hoy con otros jugadores. Necesitas iniciar sesión",
+    accountLogoutLabel: "Cerrar sesión",
+    accountEditNameLabel: "Cambiar nombre",
+    placeholderUsername: "Elige un nombre de usuario",
+
+    authTitle: "Inicia sesión",
+    authSubtitle: "Para ver y aparecer en la clasificación de hoy",
+    btnGoogleSignIn: "Continuar con Google",
+    orDivider: "o",
+    placeholderEmail: "Correo electrónico",
+    placeholderPassword: "Contraseña",
+    btnLogIn: "Entrar",
+    btnSignUp: "Registrarse",
+    authNoAccount: "¿No tienes cuenta?",
+    authHaveAccount: "¿Ya tienes cuenta?",
+    btnSwitchToSignup: "Regístrate",
+    btnSwitchToLogin: "Inicia sesión",
+    authCheckEmail: "Revisa tu correo para confirmar la cuenta.",
+
+    leaderboardTitle: "Clasificación de hoy",
+    lbLoading: "Cargando...",
+    lbError: "No se pudo cargar la clasificación.",
+    lbEmpty: "Todavía no ha jugado nadie hoy. ¡Sé el primero!",
+    lbYouTag: "TÚ",
+  },
+};
+
+// traducciones de datos "de contenido" (el valor en español es el canónico que se
+// guarda en data.js; aquí solo mapeamos a inglés para mostrar/validar)
+const COUNTRY_EN = {
+  "Japón": "Japan",
+  "Estados Unidos": "United States",
+  "Alemania": "Germany",
+  "Italia": "Italy",
+  "Francia": "France",
+  "España": "Spain",
+  "Reino Unido": "United Kingdom",
+  "Suecia": "Sweden",
+  "República Checa": "Czech Republic",
+  "Corea del Sur": "South Korea",
+};
+
+const MODEL_EN = {
+  "Escarabajo": "Beetle",
+  "Serie 1": "1 Series",
+  "Serie 3": "3 Series",
+  "Serie 5": "5 Series",
+  "Clase A": "A-Class",
+  "Clase C": "C-Class",
+  "Clase E": "E-Class",
+  "Clase S": "S-Class",
+  "Clase G": "G-Class",
+  "León": "Leon",
+};
+
+const PART_EN = {
+  faro: "headlight",
+  parrilla: "grille",
+  espejo: "mirror",
+  rueda: "wheel",
+};
+
+function t(key, vars){
+  let str = (STRINGS[currentLang] && STRINGS[currentLang][key]) || STRINGS.en[key] || key;
+  if(vars){
+    Object.keys(vars).forEach(k => { str = str.replace(new RegExp("\\{" + k + "\\}", "g"), vars[k]); });
+  }
+  return str;
+}
+
+function translateCountry(country){
+  return currentLang === "en" ? (COUNTRY_EN[country] || country) : country;
+}
+
+function translateModel(model){
+  return currentLang === "en" ? (MODEL_EN[model] || model) : model;
+}
+
+function translatePart(part){
+  return currentLang === "en" ? (PART_EN[part] || part) : PART_LABELS[part];
+}
+
+// listas traducidas, usadas para el autocompletado (se piden en caliente en cada
+// tecleo, así que siempre reflejan el idioma activo en ese momento)
+function countryOptions(){
+  return COUNTRIES.map(translateCountry);
+}
+function modelOptions(list){
+  return list.map(translateModel);
+}
+
+function applyStaticI18n(){
+  document.documentElement.lang = currentLang;
+  document.title = t("pageTitle");
+
+  const h1 = document.querySelector(".app-header h1");
+  if(h1) h1.innerHTML = `${t("titleMain")} <span>${t("titleAccent")}</span>`;
+
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+  document.querySelectorAll("[data-diff-years]").forEach(el => {
+    el.textContent = t("yearsTolerance", { n: YEAR_TOLERANCE[el.dataset.diffYears] });
+  });
+
+  const quitBtn = document.getElementById("btn-quit");
+  if(quitBtn){ quitBtn.title = t("quitLabel"); quitBtn.setAttribute("aria-label", t("quitLabel")); }
+
+  document.querySelectorAll("#account-logout, #btn-leaderboard-logout").forEach(btn => {
+    btn.title = t("accountLogoutLabel");
+    btn.setAttribute("aria-label", t("accountLogoutLabel"));
+  });
+
+  const editNameBtn = document.getElementById("account-edit-name");
+  if(editNameBtn){ editNameBtn.title = t("accountEditNameLabel"); editNameBtn.setAttribute("aria-label", t("accountEditNameLabel")); }
+
+  if(typeof updateAuthFormMode === "function") updateAuthFormMode();
+
+  document.querySelectorAll(".lang-switch button").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.lang === currentLang);
+  });
+}
+
+function setLanguage(lang){
+  if(lang !== "en" && lang !== "es") return;
+  currentLang = lang;
+  localStorage.setItem("qc_lang", lang);
+  applyStaticI18n();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  applyStaticI18n();
+  document.querySelectorAll(".lang-switch button").forEach(btn => {
+    btn.addEventListener("click", () => setLanguage(btn.dataset.lang));
+  });
+});
