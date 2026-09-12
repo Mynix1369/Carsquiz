@@ -20,6 +20,7 @@ const STRINGS = {
     modeLogoTitle: "Logos",
     modeLogoDesc: "Just the badge. Guess the brand on sight",
 
+    diffGeneral: "Overall",
     diffEasy: "Easy",
     diffMedium: "Medium",
     diffHard: "Hard",
@@ -104,6 +105,7 @@ const STRINGS = {
     modeLogoTitle: "Logos",
     modeLogoDesc: "Solo el emblema. Adivina la marca a la primera",
 
+    diffGeneral: "General",
     diffEasy: "Fácil",
     diffMedium: "Medio",
     diffHard: "Difícil",

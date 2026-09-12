@@ -2,7 +2,7 @@
 // por modo de juego (y dificultad, cuando aplica).
 
 let lbMode = "identify";
-let lbDiff = "medium";
+let lbDiff = "general";
 let pendingScoreSave = false;  // true mientras se espera a que inicies sesión para guardar la ronda que acabas de jugar
 
 function openLeaderboard(){
@@ -37,6 +37,18 @@ async function openLeaderboardForRound(){
   openLeaderboard();
 }
 
+// puntuación máxima posible para un modo+dificultad: en "Identifica el coche" la
+// dificultad cambia el máximo (100/200/300, ver DIFFICULTY_MAX_SCORE), así que un
+// mismo desempeño vale más puntos en difícil que en fácil. En "Logos" el máximo es
+// fijo pase lo que pase (misma puntuación por acierto en las tres dificultades), y en
+// "Por sonido" no hay dificultad. Se usa para pasar puntos en bruto a "% del máximo"
+// en la clasificación general, donde sí hace falta comparar entre dificultades.
+function maxScoreForModeDifficulty(mode, difficulty){
+  if(mode === "identify") return DIFFICULTY_MAX_SCORE[difficulty];
+  if(mode === "logo") return SIMPLE_ROUND_LENGTH * POINTS_SIMPLE;
+  return SOUND_MAX_SCORE;
+}
+
 async function loadLeaderboard(){
   const list = document.getElementById("leaderboard-list");
 
@@ -48,14 +60,24 @@ async function loadLeaderboard(){
   list.innerHTML = `<p class="lb-status">${t("lbLoading")}</p>`;
 
   const today = new Date().toISOString().slice(0, 10);
-  let query = sb.from("scores")
-    .select("user_id, score, profiles(display_name)")
-    .eq("mode", lbMode)
-    .eq("played_on", today)
-    .order("score", { ascending: false })
-    .limit(10);
+  // la pestaña "General" solo existe para los modos con dificultad (Identifica el
+  // coche, Logos) — Por sonido no tiene dificultad, así que sus pestañas de
+  // dificultad están ocultas y siempre se trata como una única categoría.
+  const isGeneral = lbMode !== "sound" && lbDiff === "general";
 
-  query = query.eq("difficulty", lbMode === "sound" ? "none" : lbDiff);
+  let query = sb.from("scores")
+    .select("user_id, score, difficulty, profiles(display_name)")
+    .eq("mode", lbMode)
+    .eq("played_on", today);
+
+  if(isGeneral){
+    query = query.limit(1000); // vamos a agrupar/ordenar nosotros, no la base de datos
+  } else {
+    query = query
+      .eq("difficulty", lbMode === "sound" ? "none" : lbDiff)
+      .order("score", { ascending: false })
+      .limit(10);
+  }
 
   const { data, error } = await query;
 
@@ -69,15 +91,36 @@ async function loadLeaderboard(){
     return;
   }
 
-  list.innerHTML = data.map((row, i) => {
+  let rows;
+  if(isGeneral){
+    // como el máximo posible depende de la dificultad, comparar puntos en bruto
+    // entre dificultades sería injusto (difícil da hasta 3x más puntos por el mismo
+    // acierto en Identifica el coche) — cada fila se convierte a "% del máximo
+    // posible en su propia dificultad" y, si un jugador jugó varias dificultades hoy,
+    // nos quedamos con su mejor porcentaje.
+    const bestByUser = new Map();
+    data.forEach(row => {
+      const pct = (row.score / maxScoreForModeDifficulty(lbMode, row.difficulty)) * 100;
+      const prev = bestByUser.get(row.user_id);
+      if(!prev || pct > prev.pct) bestByUser.set(row.user_id, { ...row, pct });
+    });
+    rows = [...bestByUser.values()].sort((a, b) => b.pct - a.pct).slice(0, 10);
+  } else {
+    rows = data;
+  }
+
+  list.innerHTML = rows.map((row, i) => {
     const rank = i + 1;
     const isMe = row.user_id === currentUser?.id;
     const podiumClass = rank <= 3 ? `podium-${rank}` : "";
+    const scoreLabel = isGeneral ? `${Math.round(row.pct)}%` : `${row.score} pts`;
+    const diffKey = "diff" + row.difficulty.charAt(0).toUpperCase() + row.difficulty.slice(1);
+    const diffTag = isGeneral ? `<span class="lb-diff-tag">${t(diffKey)}</span>` : "";
     return `
     <div class="lb-row ${podiumClass} ${isMe ? "me" : ""}">
       <span class="lb-rank">${rank}</span>
-      <span class="lb-name">${row.profiles?.display_name || "?"}${isMe ? `<span class="lb-me-tag">${t("lbYouTag")}</span>` : ""}</span>
-      <span class="lb-score">${row.score} pts</span>
+      <span class="lb-name">${row.profiles?.display_name || "?"}${isMe ? `<span class="lb-me-tag">${t("lbYouTag")}</span>` : ""}${diffTag}</span>
+      <span class="lb-score">${scoreLabel}</span>
     </div>`;
   }).join("");
 }
