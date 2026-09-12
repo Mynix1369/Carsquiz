@@ -462,8 +462,8 @@ const SOUND_CARS = [
     sound:"assets/sounds/s37.mp3", credit:"Sonido: Antti Leppänen (CC BY 4.0), Wikimedia Commons" },
   { id:"s38", brand:"Mitsubishi", model:"Lancer Evolution IX", year:2005, country:"Japón",
     sound:"assets/sounds/s38.mp3", credit:"Sonido: Antti Leppänen (CC BY 4.0), Wikimedia Commons" },
-  { id:"s39", brand:"Opel", model:"Corsa E", year:2014, country:"Alemania",
-    sound:"assets/sounds/s39.mp3", credit:"Sonido: MKFI (Public domain), Wikimedia Commons" },
+  { id:"s39", brand:"Nissan", model:"Micra K13", year:2010, country:"Japón",
+    sound:"assets/sounds/s39.mp3", credit:"Sonido: Oq10pass (CC0), Wikimedia Commons" },
 ];
 
 // nivel de zoom en cada intento (1 = imagen completa). Empieza muy recortado y se va revelando.

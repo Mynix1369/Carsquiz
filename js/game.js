@@ -4,6 +4,11 @@ const IDENTIFY_ROUND_LENGTH = 6;
 const SIMPLE_ROUND_LENGTH = 8;
 const POINTS_SIMPLE = 20;
 
+// ⚠️ TEMPORAL: con esto a true, el modo sonido da un sonido al azar cada vez que le das a
+// "Comenzar" (en vez de siempre el mismo de hoy) y no bloquea tras jugarlo, para poder
+// escuchar y revisar los 39 sonidos seguidos. Poner en `false` antes de dejarlo en real.
+const SOUND_TEST_MODE = true;
+
 const state = {
   mode: null,        // 'identify' | 'sound' | 'logo'
   difficulty: null,  // 'easy' | 'medium' | 'hard' (solo modo identify)
@@ -50,6 +55,7 @@ function buildQuestions(mode, difficulty){
 // todo el mundo, sin necesidad de servidor) y no repite hasta dar toda la vuelta a la
 // lista, así que con 39 sonidos nunca se repite antes de 39 días.
 function getTodaysSoundCar(){
+  if(SOUND_TEST_MODE) return SOUND_CARS[Math.floor(Math.random() * SOUND_CARS.length)];
   const epochDay = Math.floor(Date.now() / 86400000);
   return SOUND_CARS[epochDay % SOUND_CARS.length];
 }
@@ -113,7 +119,7 @@ function showScreen(id){
 function startRound(mode, difficulty){
   if(mode === "sound"){
     const prev = getSoundPlayState();
-    if(prev){ showAlreadyPlayedSound(prev); return; }
+    if(prev && !SOUND_TEST_MODE){ showAlreadyPlayedSound(prev); return; }
   }
   state.mode = mode;
   state.difficulty = difficulty || null;
@@ -502,9 +508,12 @@ function endRound(){
   else max = state.questions.length * POINTS_SIMPLE;
   document.getElementById("results-score").textContent = `${state.score} pts`;
   document.getElementById("results-detail").textContent = t("resultsMax", { max });
-  document.getElementById("btn-replay").classList.toggle("hidden", state.mode === "sound");
+  document.getElementById("btn-replay").classList.toggle("hidden", state.mode === "sound" && !SOUND_TEST_MODE);
   showScreen("screen-results");
-  if(state.mode === "sound") saveSoundPlayState({ score: state.score });
+  if(state.mode === "sound"){
+    saveSoundPlayState({ score: state.score });
+    if(SOUND_TEST_MODE) return; // no contaminar la clasificación real con pruebas de sonidos al azar
+  }
   saveScoreIfLoggedIn();
 }
 
