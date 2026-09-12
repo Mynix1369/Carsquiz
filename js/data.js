@@ -330,6 +330,8 @@ const CARS = [
     image:"assets/cars/c99.jpg", focus:{x:44,y:76}, credit:"Foto: Mr.choppers (CC-BY-SA 4.0), Wikimedia Commons" },
   { id:"c100",brand:"Rolls-Royce",  model:"Phantom",                                                      year:1975, part:"parrilla",
     image:"assets/cars/c100.jpg", focus:{x:78,y:51}, credit:"Foto: ZidaneHartono (CC-BY-SA 4.0), Wikimedia Commons" },
+  { id:"c101",brand:"Citroën",      model:"DS",                                                           year:1969, part:"faro",
+    image:"assets/cars/c101.jpg", focus:{x:39,y:61}, credit:"Foto: PlotagonNoah (CC-BY-SA 4.0), Wikimedia Commons" },
 ].map(c => ({ ...c, country: BRAND_COUNTRY[c.brand] }));
 
 // posiciones (en % de object-position) para cada tipo de "parte" en la ilustración placeholder.
