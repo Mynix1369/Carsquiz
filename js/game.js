@@ -30,8 +30,8 @@ function shuffle(arr){
 }
 
 // ---------- construir ronda ----------
-function buildQuestions(mode, difficulty){
-  if(mode === "sound") return [{ car: getTodaysSoundCar() }];
+async function buildQuestions(mode, difficulty){
+  if(mode === "sound") return [{ car: await getTodaysSoundCar() }];
 
   const n = mode === "identify" ? IDENTIFY_ROUND_LENGTH : SIMPLE_ROUND_LENGTH;
   if(mode === "logo"){
@@ -46,11 +46,43 @@ function buildQuestions(mode, difficulty){
   return [...withPhoto, ...withoutPhoto].slice(0, n).map(car => ({ car }));
 }
 
-// el "sonido del día": rota de forma determinista (misma fecha = mismo sonido para
-// todo el mundo, sin necesidad de servidor). El array SOUND_CARS ya está barajado una
-// vez a propósito (ver data.js), así que recorrerlo en orden con la fecha da una vuelta
-// completa a la lista antes de repetir — con 60 sonidos, 60 días entre repeticiones.
-function getTodaysSoundCar(){
+// el "sonido del día": se guarda en Supabase (tabla "daily_sound") la primera vez que
+// alguien lo pide cada día, así que es de verdad aleatorio entre los que no hayan salido
+// en los últimos 30 días según el historial real — no un patrón fijo que se repite cada
+// 60 días. Si dos personas lo piden a la vez el mismo día, la clave única de la tabla
+// hace que solo una inserción gane; la otra recibe un error de duplicado y simplemente
+// lee la fila que ya existe, así que todo el mundo acaba viendo el mismo sonido ese día.
+async function getTodaysSoundCar(){
+  const today = new Date().toISOString().slice(0, 10);
+
+  if(sb){
+    try {
+      const { data: existing } = await sb.from("daily_sound").select("sound_id").eq("played_on", today).maybeSingle();
+      if(existing) return SOUND_CARS.find(c => c.id === existing.sound_id) || SOUND_CARS[0];
+
+      const cutoff = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+      const { data: recent } = await sb.from("daily_sound").select("sound_id").gte("played_on", cutoff);
+      const recentIds = new Set((recent || []).map(r => r.sound_id));
+      let pool = SOUND_CARS.filter(c => !recentIds.has(c.id));
+      if(pool.length === 0) pool = SOUND_CARS; // red de seguridad, no debería pasar con 60 sonidos y 30 días
+
+      const picked = pool[Math.floor(Math.random() * pool.length)];
+      const { error: insertError } = await sb.from("daily_sound").insert({ played_on: today, sound_id: picked.id });
+
+      if(insertError){
+        // alguien más lo insertó justo antes (choque de clave única en "played_on"):
+        // usamos el sonido que ya quedó guardado, para que todos vean el mismo hoy.
+        const { data: raceWinner } = await sb.from("daily_sound").select("sound_id").eq("played_on", today).maybeSingle();
+        if(raceWinner) return SOUND_CARS.find(c => c.id === raceWinner.sound_id) || picked;
+      }
+      return picked;
+    } catch(e){
+      console.error("No se pudo determinar el sonido del día desde Supabase, usando reparto de reserva:", e);
+    }
+  }
+
+  // sin conexión a Supabase (todavía sin configurar, o falló la consulta): reparto
+  // determinista de toda la vida, para que el modo sonido nunca se quede sin jugar.
   const epochDay = Math.floor(Date.now() / 86400000);
   return SOUND_CARS[epochDay % SOUND_CARS.length];
 }
@@ -111,14 +143,14 @@ function showScreen(id){
   document.getElementById(id).classList.add("active");
 }
 
-function startRound(mode, difficulty){
+async function startRound(mode, difficulty){
   if(mode === "sound"){
     const prev = getSoundPlayState();
     if(prev){ showAlreadyPlayedSound(prev); return; }
   }
   state.mode = mode;
   state.difficulty = difficulty || null;
-  state.questions = buildQuestions(mode, difficulty);
+  state.questions = await buildQuestions(mode, difficulty);
   state.index = 0;
   state.score = 0;
   state.rawScore = 0;
