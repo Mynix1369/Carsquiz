@@ -373,7 +373,7 @@ const SPEED_BONUS = {
     medium: { full: 8,  zero: 25 },
     hard:   { full: 12, zero: 35 },
   },
-  sound: { full: 8, zero: 28 },
+  sound: { full: 30, zero: 75 },
 };
 const SPEED_BONUS_FLOOR = 0.5;
 
