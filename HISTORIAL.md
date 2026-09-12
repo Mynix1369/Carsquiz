@@ -289,27 +289,141 @@ Efecto secundario del §9 (Fix 3): al crecer el ancho de `#app`, las miniaturas 
 
 ---
 
-## 14. Pendientes / temporales conocidos
+## 14. Pendientes / temporales conocidos (actualizado 12 sept. 2026)
 
-1. **Icono de Porsche en el menú** (`assets/ui/mode-logo.jpg`, marcado con comentario `<!-- TEMPORAL -->` en `index.html`) — el usuario dijo que lo cambiaría más adelante, sigue sin tocar.
+1. ~~Icono de Porsche en el menú~~ — **resuelto, ya no es "temporal"**: ver §20. El usuario decidió conscientemente mantenerlo tal cual (real, no placeholder de IA), argumentando que no hay anuncios (solo donación voluntaria) y que el modo Logos ya usa 100 marcas reales como mecánica central, así que un escudo más como icono de menú no es un salto de riesgo. Se quitó el comentario `<!-- TEMPORAL -->` de `index.html`.
 2. **Foto c100 (Rolls-Royce Phantom VI)** en el dataset de 100 fotos tiene un problema de fondo confuso (cartel de museo) en el recorte de zoom — se ofreció arreglarlo aparte, el usuario no lo ha pedido todavía.
-3. Nada más pendiente a día de hoy (11 sept. 2026) en lo que respecta a UI — el último hilo abierto (fondo animado) se cerró con la versión de "focos de exhibición".
+3. **Modo "Por sonido" usa audio sintético, no grabaciones reales** — ver §22, es el pendiente activo a día de hoy.
+4. **Login con Google configurado pero oculto** — ver §19.4, el botón está en el código (`js/auth.js`, `index.html`) pero con `class="hidden"` porque Google Cloud pedía datos de facturación para crear las credenciales OAuth. Se puede reactivar si el usuario decide hacerlo con un adulto delante (cuenta de Google sin restricción de edad) o si encuentra la forma de saltarse el paso de facturación.
 
 ---
 
 ## 15. Dónde está cada cosa
 
-- `index.html` — estructura de las 3 pantallas (menú, juego, resultados), fondo animado, dial de dificultad ×2 (identificar y logos).
-- `css/styles.css` — todo el sistema de diseño, animaciones de fondo, feedback de fallo, responsive.
-- `js/data.js` — `BRAND_MODELS`, `BRANDS`, `ALL_MODELS`, `LOGO_ONLY_BRANDS`, `LOGO_BRANDS`, `LOGO_DIFFICULTY`, `CARS` (100 coches), `COUNTRIES`, `PART_FOCUS`, `ZOOM_SCHEDULE`, etc.
+- `index.html` — estructura de las pantallas (menú, juego, resultados, clasificación), modal de login, fondo animado, dial de dificultad ×2 (identificar y logos), selector de idioma, insignia de cuenta.
+- `css/styles.css` — todo el sistema de diseño, animaciones de fondo, feedback de fallo, responsive, estilos del modal de login y de la clasificación (podio F1).
+- `js/data.js` — `BRAND_MODELS`, `BRANDS`, `ALL_MODELS`, `LOGO_ONLY_BRANDS`, `LOGO_BRANDS`, `LOGO_DIFFICULTY`, `CARS` (100 coches), `COUNTRIES`, `PART_FOCUS`, `ZOOM_SCHEDULE`, `YEAR_TOLERANCE`, `DIFFICULTY_MAX_SCORE`, `SPEED_BONUS`, `SPEED_BONUS_FLOOR`.
+- `js/i18n.js` — sistema de idiomas (inglés por defecto / español), `STRINGS`, `translateCountry/Model/Part`, `applyStaticI18n()`. Ver §16.
 - `js/visuals.js` — `LOGO_FILE_BY_BRAND` (mapa marca→slug), `buildLogoUri()`, generación de imágenes placeholder de coche (`buildCarImageUri`, ya no usada para el modo logos).
-- `js/game.js` — toda la lógica de juego: `buildQuestions`, `startRound`, `renderStimulus`, `checkIdentifyAttempt`, `checkSimpleAnswer`, `triggerFailFeedback`, `scrollToStimulus`, `finishIdentifyQuestion`, wiring de eventos al final del archivo.
+- `js/game.js` — toda la lógica de juego: `buildQuestions`, `startRound`, `renderStimulus`, `checkIdentifyAttempt`, `checkSimpleAnswer`, `triggerFailFeedback`, `scrollToStimulus`, `finishIdentifyQuestion`, bono de velocidad (`speedMultiplier`, `startSpeedTimer`), guardado de puntuación (`saveScoreIfLoggedIn`), wiring de eventos al final del archivo.
 - `js/autocomplete.js` — lógica de autocompletado genérica usada por marca/modelo/país.
-- `js/audio.js` — sonidos del modo "Por sonido".
+- `js/audio.js` — sonidos del modo "Por sonido" (sintetizados, no reales — ver §22).
+- `js/supabase-config.js` — `SUPABASE_URL` / `SUPABASE_ANON_KEY` (públicas a propósito, protegidas por RLS).
+- `js/auth.js` — cliente de Supabase, login/registro, perfil de usuario, edición de nombre.
+- `js/leaderboard.js` — pantalla de clasificación diaria, pestañas de modo/dificultad, guardado con "mejor puntuación del día".
 - `assets/logos/*.png` — los 100 logos reales (500×500, fondo crema `#f3eee3`).
-- `assets/ui/*.jpg` — los 3 iconos de modo (imágenes del usuario, ChatGPT-generadas).
+- `assets/ui/*.png` — los 4 iconos de menú (identificar, sonido, logos, clasificación), con fondo transparente — ver §20.
 - `assets/` (resto) — las 100 fotos de coches reales de la fase anterior.
 
 ---
 
-*Documento generado el 11 sept. 2026 a petición del usuario, antes de una compactación de contexto, para no perder el hilo de decisiones tomadas a lo largo de la sesión.*
+## 16. Sistema de idiomas (inglés por defecto / español)
+
+Pedido: opción para cambiar de idioma, con inglés como predeterminado.
+
+**Decisión de arquitectura**: el español se queda como valor **canónico interno** en `data.js` (nombres de marca, modelo, país) — no se duplican los datos en dos idiomas. `js/i18n.js` traduce solo lo necesario para mostrar en pantalla: un diccionario `STRINGS.en/es` para textos fijos, y mapas pequeños (`COUNTRY_EN`, `MODEL_EN`, `PART_EN`) para el puñado de valores de contenido que sí cambian entre idiomas (la mayoría de marcas/modelos son nombres propios válidos en ambos idiomas, no necesitan traducción).
+
+- `localStorage` (`qc_lang`) recuerda el idioma elegido entre visitas.
+- Textos estáticos vía `data-i18n="clave"` (se aplican en `applyStaticI18n()`), textos dinámicos vía `t("clave", {variables})`.
+- **Validación de respuestas traducida**: en modo Identificar, si el idioma activo es inglés, `checkIdentifyAttempt()` compara lo que escribes contra `translateCountry()`/`translateModel()` del valor correcto, no contra el español canónico — así "United States" cuenta como correcto en inglés igual que "Estados Unidos" en español.
+- **Selector de idioma solo en el menú principal** (no dentro de una partida en curso) — decisión deliberada para no tener que re-renderizar contenido de juego a medias generado dinámicamente.
+- Las banderitas son **SVG dibujadas a mano**, no emoji — Windows no renderiza banderas emoji como banderas de colores (las muestra como código de país en texto), así que había que evitarlo.
+
+---
+
+## 17. Bono de velocidad estilo Kahoot
+
+Pedido: puntos extra por responder rápido, ajustado a la dificultad.
+
+**Decisión de diseño** (tras preguntar al usuario y que confirmara): la velocidad **no suma puntos aparte**, multiplica los puntos que ya ibas a ganar (×1 si respondes dentro de la ventana "completa", bajando en línea recta hasta ×0.5 en la ventana "cero"). Así el tope de ronda por dificultad (ver §18) se mantiene siempre como techo real, nunca se puede superar ni con máxima velocidad.
+
+- Config en `data.js`: `SPEED_BONUS.identify/logo/sound`, cada uno con `{full, zero}` en segundos por dificultad (más tiempo cuanto más difícil, porque hay más que pensar/escribir). Subidos una vez porque el usuario los encontró demasiado ajustados en la primera versión.
+- `SPEED_BONUS_FLOOR = 0.5` (multiplicador mínimo).
+- Barra visual (`#speed-bar`, verde) bajo la cabecera del juego, con transición CSS que se vacía durante la ventana de bono completo — se reinicia en cada intento nuevo (`startSpeedTimer()`), no solo al principio de la pregunta.
+
+---
+
+## 18. Topes de puntuación por dificultad en "Identifica el coche"
+
+Pedido: que fácil valga como máximo 100 puntos, medio 200, difícil 300 — para que la dificultad tenga peso real en la puntuación (antes daba igual la dificultad elegida, el tope era siempre 300).
+
+**Técnica usada** (importante si se toca esto): la puntuación se acumula primero **sin escalar** en `state.rawScore` (máx. 50 pts/pregunta, igual que antes), y solo al guardar se convierte a la escala de la dificultad: `state.score = round(state.rawScore * scoreScale)`, donde `scoreScale = DIFFICULTY_MAX_SCORE[dificultad] / (IDENTIFY_ROUND_LENGTH * 50)`. Esto evita que el redondeo por pregunta deje la ronda perfecta corta o pasada del tope (probado: fácil/medio/difícil dan exactamente 100/200/300 en una ronda perfecta, no 99 ni 101).
+
+---
+
+## 19. Clasificación diaria con login (Supabase)
+
+Pedido: tabla de clasificación que pida iniciar sesión, con puntuaciones separadas por día.
+
+### 19.1 Decisiones tomadas (tras preguntar al usuario)
+
+- **Backend**: Supabase (ya tenía cuenta por el proyecto de la clínica veterinaria) — proyecto nuevo y separado, no mezclado con ese otro proyecto.
+- **Login**: email+contraseña **y** Google (Google acabó desactivado por un problema práctico, ver §19.4).
+- **Anti-trampas**: ninguno a propósito — la puntuación se calcula 100% en el cliente y se manda tal cual, sin validar en servidor. Es una app para jugar con amigos, sin premio real, así que no compensa el esfuerzo extra ahora mismo.
+
+### 19.2 Base de datos
+
+Dos tablas en Supabase (proyecto `ekjqxqdzaaynedvhkwop`), con RLS activado:
+
+- **`profiles`**: `id` (= `auth.users.id`), `display_name`. Políticas: cualquier usuario logueado puede leer todos los perfiles (para mostrar nombres en la clasificación), pero solo puede crear/editar el suyo propio.
+- **`scores`**: `user_id`, `mode`, `difficulty` (**siempre con valor**, `'none'` en vez de `null` para el modo sonido — necesario para que la restricción única funcione, ya que en SQL `NULL` nunca es igual a `NULL`), `score`, `played_on` (por defecto `current_date`). Políticas: lectura abierta a logueados, inserción solo de tu propia fila.
+- **Restricción única** `(user_id, mode, difficulty, played_on)` — garantiza que solo pueda haber **una fila por jugador y día** en cada combinación de modo+dificultad. Hubo que limpiar duplicados de las pruebas antes de poder crearla (`delete ... using ... where (a.score, a.id) < (b.score, b.id)`, quedándose con la mejor).
+- **`saveScoreIfLoggedIn()`** (en `game.js`): antes de guardar, mira si ya hay una fila de hoy para ese modo+dificultad; si la nueva puntuación no mejora la existente, no hace nada; si la mejora (o no había ninguna), hace `upsert` con `onConflict` sobre la restricción única. **Se puede jugar todas las veces que se quiera** — solo se guarda/actualiza si superas tu propio récord del día, y en la clasificación siempre aparece una única fila por jugador.
+- ⚠️ **Bug encontrado y corregido**: al principio faltaba la política RLS de `UPDATE` en `scores` (solo había `SELECT` e `INSERT`), así que el `upsert` fallaba silenciosamente en el caso de actualización con error `42501` (row-level security). Añadida la política que faltaba.
+
+### 19.3 Flujo de guardado si juegas sin sesión iniciada
+
+Botón de resultados **"Save score & view leaderboard"** (antes decía solo "Ver clasificación"): si no has iniciado sesión, abre el login y, en cuanto entras, guarda automáticamente la puntuación de la ronda que acabas de jugar (aunque ya hubiera terminado) antes de llevarte a la clasificación — usando un flag `pendingScoreSave` en `leaderboard.js` que se limpia si cierras el modal sin loguearte, para no arrastrarlo a un login posterior no relacionado.
+
+### 19.4 Login con Google: configurado pero desactivado
+
+Se dejó todo el código listo (botón, flujo OAuth) pero **oculto con `class="hidden"`** porque, al intentar crear las credenciales OAuth en Google Cloud Console con la cuenta del usuario (15 años), Google exigía activar una cuenta de facturación de pago (tarjeta) para continuar — no relacionado con el login en sí, sino con una política de edad de Google Cloud específicamente. Se decidió no meter datos de pago para esto. Queda pendiente por si el usuario quiere retomarlo con una cuenta de Google sin esa restricción, o con un adulto delante.
+
+**Nota de sourcing de rate-limit**: durante las pruebas se agotó varias veces el límite gratuito de envío de correos de confirmación de Supabase — se resolvió desactivando "Confirm email" en Authentication → Settings (registro instantáneo, sin correo de por medio; razonable para una app de amigos sin datos sensibles).
+
+### 19.5 Nombre de usuario
+
+Campo "username" en el formulario de registro (solo visible en modo "Sign up"), guardado en `user_metadata.display_name` de Supabase y usado como nombre del perfil en vez del email. También editable en cualquier momento con el icono de lápiz junto al nombre en la cabecera del menú (edición inline, guarda en `profiles.display_name` al perder el foco o pulsar Enter).
+
+### 19.6 Diseño de la clasificación: estilo podio F1
+
+Pedido explícito de rediseño ("aburrido... tipo la tabla de F1"). Implementado con moderación (sin pasarse de elaborado, para no romper el estilo minimalista del resto de la app): barra de color a la izquierda de cada fila (oro/plata/bronce para el top 3, gris neutro el resto), número de posición más grande y coloreado a juego en el podio, puntuación en una pastilla remarcada. Fila propia marcada con un anillo interior ámbar + etiqueta "YOU"/"TÚ", independiente del color del podio (se pueden combinar si vas primero).
+
+---
+
+## 20. Iconos de menú: de JPG con fondo sólido a PNG transparente
+
+Los 3 iconos originales (identificar/sonido/logos) eran JPG con fondo oscuro sólido "horneado" en la imagen. El usuario los regeneró con fondo transparente real (PNG con canal alfa) y pidió sustituirlos, más uno nuevo a juego para la tarjeta de clasificación (trofeo con degradado dorado-bronce).
+
+- Los 4 archivos venían de la carpeta de Descargas del usuario — **importante**: no hay forma de acceder directamente a una imagen que el usuario pega en el chat (solo se puede "ver" para describirla/recrearla en SVG, no guardarla como archivo). Si el usuario quiere que se use un archivo real, tiene que guardarlo él mismo en el ordenador y pasar la ruta.
+- `assets/ui/mode-identify.jpg/mode-sound.jpg/mode-logo.jpg` → `.png` (mismas composiciones, mismo `object-fit:cover` en CSS, sin necesidad de tocarlo — el recorte queda igual, solo cambia que ahora el hueco se rellena con el fondo oscuro de la tarjeta en vez de un color horneado).
+- Nuevo `assets/ui/mode-leaderboard.png` (trofeo) sustituye al SVG que se había dibujado a mano como solución provisional para esa tarjeta.
+- JPGs viejos borrados del repositorio (`git rm`) al quedar sin uso.
+
+---
+
+## 21. Despliegue: de Netlify Drop a GitHub + Vercel (continuo)
+
+El despliegue anterior (Netlify Drop, §4) exigía subir la carpeta a mano cada vez. El usuario pidió que se actualizara solo.
+
+- Repositorio creado sin querer por el usuario mientras buscaba Supabase (confundió Supabase con GitHub Projects) — se aprovechó ese mismo repo (`Mynix1369/Carsquiz`) en vez de crear uno nuevo, a petición del usuario.
+- `git init`, commit inicial con todo el proyecto (excepto un par de PNG sueltos sin usar que había en la raíz), `git remote add origin` + `git push`. Las credenciales de GitHub ya estaban cacheadas en el Git Credential Manager de Windows, no hizo falta login manual.
+- Conectado a Vercel (Import Project → repo de GitHub, framework "Other", sin build command). Cada `git push` a `main` despliega solo en 1-2 minutos.
+- **URL de producción**: `carsquiz.vercel.app` (también responde en `carsquiz-mr98.vercel.app`, alias del mismo despliegue).
+- El sitio de Netlify sigue existiendo pero **ha quedado desactualizado/abandonado** — todo el trabajo desde este punto se publica solo en Vercel.
+- Flujo de trabajo establecido de aquí en adelante: editar → probar en local (`preview_start` de este entorno) → `git add` + `git commit` + `git push` → verificar en `carsquiz.vercel.app`.
+
+---
+
+## 22. Pendiente activo: modo "Por sonido" sin contenido real
+
+`js/audio.js` genera un patrón de pitidos con Web Audio API a partir de un hash del `id`+`brand` del coche — **no son grabaciones de motores reales**, cada coche sí suena distinto y de forma consistente (mismo coche = mismo sonido siempre), pero el patrón no tiene relación real con cómo suena esa marca. El usuario preguntó explícitamente qué hacer al respecto — **todavía sin decidir**. Opciones sobre la mesa (pendiente de discutir con el usuario en la próxima sesión):
+
+1. **Sonidos reales agrupados por "arquetipo" de motor** (no por coche exacto): ~10-15 clips libres de derechos (CC0, ej. freesound.org) de sonidos genéricos (V8, 4 cilindros, eléctrico, diésel, etc.), asignando cada marca al arquetipo que le pega. Viable porque el juego solo pide adivinar la **marca**, no el modelo exacto — coherente con el resto de la app (contenido real, no inventado), pero requiere una sesión de sourcing (como se hizo con los logos, aunque a menor escala).
+2. **Mejorar la síntesis actual** para que sea coherente con las características reales del motor de cada marca (grave/agudo, suave/áspero) en vez de aleatoria por hash — cero riesgo de licencias, no requiere assets nuevos, pero nunca sonará "real".
+
+No implementado todavía — queda como el hilo abierto de esta sesión.
+
+---
+
+*Documento generado el 11 sept. 2026, ampliado el 12 sept. 2026 con todo el trabajo de sesión: idiomas, bono de velocidad, topes de puntuación por dificultad, clasificación diaria con login (Supabase), rediseño de la clasificación estilo podio F1, iconos de menú con transparencia real, y despliegue continuo en Vercel vía GitHub.*
