@@ -7,60 +7,10 @@ function normalize(str){
     .normalize("NFD").replace(/[̀-ͯ]/g,""); // quita acentos
 }
 
-const BRAND_MODELS = {
-  "Toyota": ["Corolla", "Camry", "Yaris", "RAV4", "Land Cruiser", "Supra", "Hilux"],
-  "Honda": ["Civic", "Accord", "CR-V", "Jazz", "NSX"],
-  "Nissan": ["Micra", "Qashqai", "Juke", "GT-R", "Leaf"],
-  "Mazda": ["MX-5", "3", "CX-5", "RX-7"],
-  "Subaru": ["Impreza", "Forester", "Outback", "BRZ"],
-  "Mitsubishi": ["Lancer", "Outlander", "Pajero", "Eclipse"],
-  "Suzuki": ["Swift", "Vitara", "Jimny"],
-  "Lexus": ["IS", "RX", "LS", "LC"],
-  "Ford": ["Focus", "Fiesta", "Mustang", "Explorer", "F-150", "Ka"],
-  "Chevrolet": ["Camaro", "Corvette", "Cruze", "Spark", "Malibu"],
-  "Tesla": ["Model S", "Model 3", "Model X", "Model Y"],
-  "Chrysler": ["300", "PT Cruiser", "Voyager"],
-  "Dodge": ["Charger", "Challenger", "Ram", "Viper"],
-  "Jeep": ["Wrangler", "Renegade", "Compass", "Grand Cherokee"],
-  "Cadillac": ["Escalade", "CTS", "XT5"],
-  "GMC": ["Sierra", "Yukon"],
-  "Buick": ["Regal", "Enclave"],
-  "Volkswagen": ["Golf", "Polo", "Passat", "Escarabajo", "Tiguan", "Up!"],
-  "BMW": ["Serie 1", "Serie 3", "Serie 5", "X5", "M3", "i8"],
-  "Mercedes-Benz": ["Clase A", "Clase C", "Clase E", "GLA", "Clase S", "Clase G"],
-  "Audi": ["A3", "A4", "A6", "Q5", "TT", "R8"],
-  "Porsche": ["911", "Cayenne", "Macan", "718 Boxster", "Panamera"],
-  "Opel": ["Corsa", "Astra", "Insignia", "Manta"],
-  "Fiat": ["500", "Panda", "Punto", "Tipo", "124 Spider"],
-  "Alfa Romeo": ["Giulia", "Giulietta", "Stelvio", "4C", "Spider"],
-  "Ferrari": ["488", "F40", "Testarossa", "Portofino", "Roma"],
-  "Lamborghini": ["Huracán", "Aventador", "Gallardo", "Countach"],
-  "Maserati": ["Ghibli", "Levante", "Quattroporte"],
-  "Lancia": ["Delta", "Ypsilon", "Stratos"],
-  "Renault": ["Clio", "Megane", "4", "5", "Twingo", "Captur"],
-  "Peugeot": ["208", "308", "3008", "205", "206"],
-  "Citroën": ["2CV", "C3", "C4", "Berlingo", "DS3", "DS"],
-  "SEAT": ["Ibiza", "León", "Arona", "Ateca", "Marbella"],
-  "Mini": ["Cooper", "Countryman", "Clubman"],
-  "Jaguar": ["XE", "F-Type", "XF", "E-Type"],
-  "Land Rover": ["Defender", "Discovery", "Range Rover", "Evoque"],
-  "Aston Martin": ["DB9", "Vantage", "DBS"],
-  "Bentley": ["Continental", "Bentayga", "Flying Spur"],
-  "Rolls-Royce": ["Phantom", "Ghost", "Cullinan"],
-  "Volvo": ["XC60", "XC90", "S60", "V40", "240"],
-  "Saab": ["900", "9-3", "9-5"],
-  "Skoda": ["Octavia", "Fabia", "Superb", "Kodiaq"],
-  "Hyundai": ["i20", "Tucson", "Santa Fe", "Ioniq"],
-  "Kia": ["Sportage", "Rio", "Ceed", "Picanto"],
-};
-
-const BRANDS = Object.keys(BRAND_MODELS);
-
-// lista plana de modelos (para autocompletar cuando aún no se ha elegido marca)
-const ALL_MODELS = [...new Set(Object.values(BRAND_MODELS).flat())];
-
-// marcas adicionales que solo aparecen en el modo "Logos" (no tienen fotos de coche
-// ni sonido de motor, así que no forman parte de CARS ni de los otros modos)
+// marcas adicionales que solo aparecen en el modo "Logos" (no tienen fotos de coche,
+// así que no forman parte de CARS) — algunas sí se usan también en Sonido (a través
+// de LOGO_BRANDS, más abajo, en el campo de marca), porque el reto diario incluye
+// fabricantes como Bugatti, Koenigsegg o Alpine que Identificar todavía no tiene.
 const LOGO_ONLY_BRANDS = [
   "Isuzu", "Daihatsu", "Genesis", "Infiniti", "Acura", "Datsun", "Scion", "SsangYong",
   "Great Wall", "Haval", "BYD", "Geely", "MG", "Chery", "Tata", "Mahindra",
@@ -70,8 +20,6 @@ const LOGO_ONLY_BRANDS = [
   "Studebaker", "Trabant", "Simca", "Autobianchi", "Holden", "Daewoo", "UAZ", "Innocenti",
   "De Tomaso", "Spyker", "Wiesmann", "Borgward", "NSU", "Rover", "Zastava", "Talbot"
 ];
-
-const LOGO_BRANDS = [...BRANDS, ...LOGO_ONLY_BRANDS];
 
 // dificultad del modo "Logos": fácil = el nombre de la marca aparece en el propio logo;
 // medio = solo el escudo/símbolo, pero de una marca muy conocida; difícil = escudo/símbolo
@@ -512,6 +460,26 @@ const SOUND_CARS = [
   { id:"s29", brand:"Renault", model:"5 Maxi Turbo", year:1985, country:"Francia",
     sound:"assets/sounds/s29.mp3", credit:"Sonido: Edvvc (CC BY-SA 3.0), Wikimedia Commons" },
 ];
+
+// BRAND_MODELS (el autocompletado de "modelo" de Identificar y Sonido) se calcula aquí,
+// a partir de los coches reales de CARS + SOUND_CARS, en vez de mantenerse a mano: una
+// lista escrita a mano se queda desincronizada en cuanto se añade un coche nuevo a
+// cualquiera de los dos modos — de hecho así se encontró que 57 de los 60 coches de
+// Sonido (los de motorsport/edición especial, tipo "911 GT3 RS" o "M3 GT2") no salían
+// como sugerencia porque la lista original solo se había pensado para Identificar.
+// Calculándolo así, cualquier coche que se añada en el futuro queda cubierto solo.
+const BRAND_MODELS = {};
+[...CARS, ...SOUND_CARS].forEach(({ brand, model }) => {
+  if(!BRAND_MODELS[brand]) BRAND_MODELS[brand] = [];
+  if(!BRAND_MODELS[brand].includes(model)) BRAND_MODELS[brand].push(model);
+});
+
+const BRANDS = Object.keys(BRAND_MODELS);
+
+// lista plana de modelos (para autocompletar cuando aún no se ha elegido marca)
+const ALL_MODELS = [...new Set(Object.values(BRAND_MODELS).flat())];
+
+const LOGO_BRANDS = [...BRANDS, ...LOGO_ONLY_BRANDS];
 
 // nivel de zoom en cada intento (1 = imagen completa). Empieza muy recortado y se va revelando.
 // Fácil: llega casi a ver el coche entero. Medio: se queda a media revelación. Difícil: siempre
