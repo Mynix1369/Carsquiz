@@ -61,6 +61,7 @@ const STRINGS = {
     msgPerfect: "Perfect! You got it on attempt {attempt}. +{points} pts",
     msgOutOfAttempts: "Out of attempts. It was a {brand} {model} ({country}, {year}). +{points} pts",
     msgTryAgain: "Not yet. Here's a bit more of the image — try again.",
+    msgTryAgainSound: "Not yet. Listen to the sound again and try again.",
     msgSimpleCorrect: "Correct! It's a {brand}. +{points} pts",
     msgSimpleWrong: "Not quite. It was a {brand}.",
 
@@ -146,6 +147,7 @@ const STRINGS = {
     msgPerfect: "¡Perfecto! Lo has adivinado en el intento {attempt}. +{points} pts",
     msgOutOfAttempts: "Se acabaron los intentos. Era un {brand} {model} ({country}, {year}). +{points} pts",
     msgTryAgain: "Todavía no. Aquí tienes un poco más de imagen — inténtalo de nuevo.",
+    msgTryAgainSound: "Todavía no. Vuelve a escuchar el sonido e inténtalo de nuevo.",
     msgSimpleCorrect: "¡Correcto! Es de la marca {brand}. +{points} pts",
     msgSimpleWrong: "No exactamente. Era de la marca {brand}.",
 

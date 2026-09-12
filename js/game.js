@@ -466,7 +466,7 @@ function checkIdentifyAttempt(q){
 
   state.attempt++;
   banner.classList.add("no");
-  banner.textContent = t("msgTryAgain");
+  banner.textContent = t(state.mode === "sound" ? "msgTryAgainSound" : "msgTryAgain");
   document.getElementById("score-display").textContent = `${state.score} pts`;
   const attemptNumEl = document.getElementById("attempt-num");
   if(attemptNumEl) attemptNumEl.textContent = state.attempt;
