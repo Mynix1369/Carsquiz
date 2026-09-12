@@ -4,11 +4,6 @@ const IDENTIFY_ROUND_LENGTH = 6;
 const SIMPLE_ROUND_LENGTH = 8;
 const POINTS_SIMPLE = 20;
 
-// ⚠️ TEMPORAL: con esto a true, el modo sonido da un sonido al azar cada vez que le das a
-// "Comenzar" (en vez de siempre el mismo de hoy) y no bloquea tras jugarlo, para poder
-// escuchar y revisar los 39 sonidos seguidos. Poner en `false` antes de dejarlo en real.
-const SOUND_TEST_MODE = true;
-
 const state = {
   mode: null,        // 'identify' | 'sound' | 'logo'
   difficulty: null,  // 'easy' | 'medium' | 'hard' (solo modo identify)
@@ -52,16 +47,10 @@ function buildQuestions(mode, difficulty){
 }
 
 // el "sonido del día": rota de forma determinista (misma fecha = mismo sonido para
-// todo el mundo, sin necesidad de servidor) y no repite hasta dar toda la vuelta a la
-// lista, así que con 39 sonidos nunca se repite antes de 39 días.
-let soundTestIndex = 0; // ⚠️ TEMPORAL: recorre SOUND_CARS en orden (s1, s2, s3...) en modo prueba
-
+// todo el mundo, sin necesidad de servidor). El array SOUND_CARS ya está barajado una
+// vez a propósito (ver data.js), así que recorrerlo en orden con la fecha da una vuelta
+// completa a la lista antes de repetir — con 60 sonidos, 60 días entre repeticiones.
 function getTodaysSoundCar(){
-  if(SOUND_TEST_MODE){
-    const car = SOUND_CARS[soundTestIndex % SOUND_CARS.length];
-    soundTestIndex++;
-    return car;
-  }
   const epochDay = Math.floor(Date.now() / 86400000);
   return SOUND_CARS[epochDay % SOUND_CARS.length];
 }
@@ -125,7 +114,7 @@ function showScreen(id){
 function startRound(mode, difficulty){
   if(mode === "sound"){
     const prev = getSoundPlayState();
-    if(prev && !SOUND_TEST_MODE){ showAlreadyPlayedSound(prev); return; }
+    if(prev){ showAlreadyPlayedSound(prev); return; }
   }
   state.mode = mode;
   state.difficulty = difficulty || null;
@@ -219,19 +208,9 @@ function renderStimulus(q){
       <button id="play-sound-btn" class="play-btn">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
       </button>
-      <p class="hint-text">${t("soundHint")}</p>
-      ${SOUND_TEST_MODE ? `
-        <p class="hint-text" style="color:var(--amber)">${q.car.id} — ${q.car.brand} ${q.car.model} (${q.car.year})</p>
-        <button id="test-next-sound-btn" class="btn-secondary" type="button">Siguiente sonido (prueba)</button>
-      ` : ""}`;
+      <p class="hint-text">${t("soundHint")}</p>`;
     area.appendChild(box);
     document.getElementById("play-sound-btn").addEventListener("click", () => playCarSound(q.car));
-    if(SOUND_TEST_MODE){
-      document.getElementById("test-next-sound-btn").addEventListener("click", () => {
-        q.car = getTodaysSoundCar();
-        renderStimulus(q);
-      });
-    }
     playCarSound(q.car);
     return;
   }
@@ -524,12 +503,9 @@ function endRound(){
   else max = state.questions.length * POINTS_SIMPLE;
   document.getElementById("results-score").textContent = `${state.score} pts`;
   document.getElementById("results-detail").textContent = t("resultsMax", { max });
-  document.getElementById("btn-replay").classList.toggle("hidden", state.mode === "sound" && !SOUND_TEST_MODE);
+  document.getElementById("btn-replay").classList.toggle("hidden", state.mode === "sound");
   showScreen("screen-results");
-  if(state.mode === "sound"){
-    saveSoundPlayState({ score: state.score });
-    if(SOUND_TEST_MODE) return; // no contaminar la clasificación real con pruebas de sonidos al azar
-  }
+  if(state.mode === "sound") saveSoundPlayState({ score: state.score });
   saveScoreIfLoggedIn();
 }
 
