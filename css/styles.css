@@ -476,6 +476,20 @@ body{
 .field input:focus{ outline:none; border-color:var(--amber-dim); box-shadow:0 0 0 3px var(--amber-glow); }
 .field input:disabled{ opacity:0.55; }
 
+/* Safari/Chrome en móvil hacen zoom automático al enfocar un campo con letra menor
+   de 16px, y ese zoom a veces se queda "pillado" al cerrar el teclado (mismo bug ya
+   visto y arreglado en el proyecto de la clínica veterinaria). Arreglo de raíz: que
+   ningún input/select/textarea baje de 16px en pantallas de móvil, así el navegador
+   nunca activa el zoom automático de por sí. No tocar el viewport meta ni
+   "user-scalable=no" para esto — eso desactivaría el pinch-zoom para todo el mundo.
+   El !important es necesario aquí: varios inputs (.field input, .account-name-input,
+   #auth-email-form input...) ya fijan su propio font-size más pequeño con más
+   especificidad que un simple selector de elemento, y esta regla tiene que ganar
+   siempre en móvil pase lo que pase, sin tener que ir enumerando cada uno a mano. */
+@media (max-width: 639px){
+  input, select, textarea{ font-size:16px !important; }
+}
+
 /* ---------- autocompletar ---------- */
 .autocomplete{ position:relative; }
 .ac-list{
