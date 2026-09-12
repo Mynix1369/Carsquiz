@@ -461,9 +461,9 @@ const SOUND_CARS = [
     sound:"assets/sounds/s29.mp3", credit:"Sonido: Edvvc (CC BY-SA 3.0), Wikimedia Commons" },
 ];
 
-// BRAND_MODELS (el autocompletado de "modelo" de Identificar y Sonido) se calcula aquí,
-// a partir de los coches reales de CARS + SOUND_CARS, en vez de mantenerse a mano: una
-// lista escrita a mano se queda desincronizada en cuanto se añade un coche nuevo a
+// BRAND_MODELS (el autocompletado de "modelo" de Identificar y Sonido) parte de los
+// coches reales de CARS + SOUND_CARS, en vez de mantenerse solo a mano: una lista
+// escrita a mano se queda desincronizada en cuanto se añade un coche nuevo a
 // cualquiera de los dos modos — de hecho así se encontró que 57 de los 60 coches de
 // Sonido (los de motorsport/edición especial, tipo "911 GT3 RS" o "M3 GT2") no salían
 // como sugerencia porque la lista original solo se había pensado para Identificar.
@@ -472,6 +472,73 @@ const BRAND_MODELS = {};
 [...CARS, ...SOUND_CARS].forEach(({ brand, model }) => {
   if(!BRAND_MODELS[brand]) BRAND_MODELS[brand] = [];
   if(!BRAND_MODELS[brand].includes(model)) BRAND_MODELS[brand].push(model);
+});
+
+// además de los modelos que realmente salen a jugar, conviene tener "de relleno" para
+// que el autocompletado no se quede corto ni delate la respuesta con muy pocas
+// opciones — modelos reales de cada marca que hoy no aparecen en ningún coche del
+// juego. Se añaden después de los reales y solo si no estaban ya, para que cada marca
+// llegue a un mínimo de 10 opciones de modelo.
+const FILLER_MODELS = {
+  "Alfa Romeo": ["Giulietta", "156", "159", "Brera", "GTV", "MiTo"],
+  "Alpine": ["A110", "A310", "A610", "GTA", "A108", "V6 Turbo", "A310 V6", "A106", "A210"],
+  "Aston Martin": ["DB5", "DB7", "Vantage", "Vanquish", "DBX", "Valkyrie", "DB11"],
+  "Audi": ["A3", "A6", "Q5", "Q7", "e-tron", "S4", "RS6"],
+  "BMW": ["Serie 5", "Serie 7", "M5", "Z4", "X3", "X1"],
+  "Bentley": ["Continental GT", "Bentayga", "Flying Spur", "Mulsanne", "Arnage", "Brooklands", "Azure", "Turbo R"],
+  "Bugatti": ["Chiron", "EB110", "Veyron", "Divo", "Type 35", "Type 57", "Royale", "Baby II"],
+  "Buick": ["Riviera", "Skylark", "LeSabre", "Century", "Roadmaster", "Electra", "GNX", "Encore", "Envision"],
+  "Cadillac": ["DeVille", "Seville", "Eldorado", "ATS", "XT4", "CT5", "Fleetwood", "Allante"],
+  "Chevrolet": ["Impala", "Bel Air", "Silverado", "Suburban", "Blazer"],
+  "Chrysler": ["PT Cruiser", "Sebring", "300M", "Town & Country", "Voyager", "Crossfire", "LHS", "Concorde", "Imperial"],
+  "Citroën": ["C3", "C4", "Berlingo", "DS3", "Xsara", "Saxo", "Picasso"],
+  "De Tomaso": ["Mangusta", "Vallelunga", "Guarà", "Deauville", "Longchamp", "Bigua", "Pantera GT5", "Nomad", "P72"],
+  "Dodge": ["Ram", "Durango", "Journey", "Neon", "Dart", "Nitro", "Avenger"],
+  "Ferrari": ["488", "Portofino", "Roma"],
+  "Fiat": ["Punto", "Tipo", "600", "Multipla", "Uno", "Cinquecento", "Doblò"],
+  "Ford": ["Escort", "Ka", "Puma", "Ranger"],
+  "GMC": ["Suburban", "Canyon", "Acadia", "Terrain", "Envoy", "Jimmy", "Savana", "Hummer EV"],
+  "Honda": ["Jazz", "Fit", "HR-V", "Prelude", "Integra"],
+  "Hyundai": ["i20", "Tucson", "Santa Fe", "Elantra", "Kona", "Accent", "Sonata", "Veloster", "Genesis Coupe"],
+  "Jaguar": ["XE", "XF", "XJ", "S-Type", "I-Pace"],
+  "Jeep": ["Renegade", "Compass", "Cherokee", "Gladiator", "Wagoneer", "Commander", "Patriot", "CJ-5"],
+  "Kia": ["Rio", "Ceed", "Picanto", "Optima", "Soul", "Stinger", "Niro", "Telluride", "Seltos"],
+  "Koenigsegg": ["CCX", "Regera", "Jesko", "One:1", "CC8S", "Gemera", "CCR", "Agera R", "Agera RS"],
+  "Lamborghini": ["Diablo", "Murciélago", "Urus", "Miura", "Espada", "Jalpa"],
+  "Lancia": ["Ypsilon", "Stratos", "Fulvia", "Beta", "Thema", "Dedra", "Kappa", "Musa", "Thesis"],
+  "Land Rover": ["Discovery", "Evoque", "Freelander", "Discovery Sport", "Velar", "Series I", "LR3", "LR4"],
+  "Lexus": ["RX", "GS", "ES", "NX", "UX", "CT", "LC500"],
+  "Lotus": ["Elise", "Exige", "Esprit", "Europa", "Elan", "Emira", "Elite", "Excel", "Carlton"],
+  "Maserati": ["Levante", "GranTurismo", "Bora", "Merak", "Biturbo", "MC20"],
+  "Mazda": ["CX-5", "2", "6", "CX-30", "CX-9", "Tribute", "626"],
+  "McLaren": ["720S", "570S", "P1", "F1", "650S", "Senna", "GT", "Artura", "675LT"],
+  "Mercedes-Benz": ["Clase A", "GLA", "GLC", "EQS"],
+  "Mini": ["Clubman", "Paceman", "Coupe", "Roadster", "Traveller", "Moke", "Cooper S", "One"],
+  "Mitsubishi": ["Outlander", "Colt", "Galant", "ASX", "Mirage", "3000GT"],
+  "Morgan": ["Plus 4", "Plus 8", "Roadster", "3 Wheeler", "4/4", "Plus Six", "Aero 8", "Eva GT"],
+  "Nissan": ["Qashqai", "Leaf", "350Z", "Sentra", "Altima"],
+  "Opel": ["Astra", "Insignia", "Kadett", "Vectra", "Ampera", "Zafira", "Mokka", "Meriva"],
+  "Pagani": ["Huayra", "Utopia", "Zonda F", "Zonda C12", "Huayra BC", "Huayra R", "Zonda Cinque", "Zonda S", "Zonda Tricolore"],
+  "Peugeot": ["208", "308", "3008", "106", "306", "405"],
+  "Porsche": ["Macan", "718 Cayman", "Taycan", "928"],
+  "Renault": ["Clio", "Megane", "Captur", "Scenic", "Kadjar", "Espace"],
+  "Rolls-Royce": ["Ghost", "Cullinan", "Silver Shadow", "Silver Cloud", "Wraith", "Corniche", "Dawn", "Silver Spirit", "Camargue"],
+  "SEAT": ["Arona", "Ateca", "Marbella", "Toledo", "Alhambra", "Cordoba", "Panda", "Ronda"],
+  "Saab": ["9-3", "9-5", "99", "96", "9000", "Sonett", "90", "9-2X", "9-4X"],
+  "Skoda": ["Fabia", "Superb", "Kodiaq", "Rapid", "Yeti", "Karoq", "Roomster"],
+  "Subaru": ["Outback", "Legacy", "WRX", "XV", "Ascent", "Tribeca", "Baja"],
+  "Suzuki": ["Ignis", "Alto", "Baleno", "Grand Vitara", "Celerio", "SX4", "Splash"],
+  "Tesla": ["Model X", "Model Y", "Cybertruck", "Semi", "Model S Plaid", "Model 3 Performance", "Model X Plaid"],
+  "Toyota": ["Camry", "RAV4", "Hilux", "Prius"],
+  "Vauxhall": ["Astra", "Corsa", "Insignia", "Nova", "Cavalier", "Viva", "Chevette", "Vectra", "Zafira"],
+  "Volkswagen": ["Polo", "Up!", "Jetta", "Touareg", "Sharan"],
+  "Volvo": ["XC60", "XC90", "S60", "V40", "850", "940", "Amazon", "PV544"],
+};
+Object.entries(FILLER_MODELS).forEach(([brand, models]) => {
+  if(!BRAND_MODELS[brand]) BRAND_MODELS[brand] = [];
+  models.forEach(model => {
+    if(!BRAND_MODELS[brand].includes(model)) BRAND_MODELS[brand].push(model);
+  });
 });
 
 const BRANDS = Object.keys(BRAND_MODELS);
