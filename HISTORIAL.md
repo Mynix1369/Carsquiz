@@ -568,6 +568,28 @@ El usuario recordó que al fallar un intento en "Por sonido" salía el mensaje d
 
 Verificado en el navegador forzando una respuesta incorrecta en Sonido (mensaje nuevo, correcto) y en Identificar (mensaje de siempre, sin cambios).
 
+### 22.17 Recortes de "llanta" con llantas no originales
+
+El usuario se fijó en que el modo difícil de Identificar sacaba a menudo el recorte de llanta, y que en varios coches esa llanta no es la de fábrica — un recorte así no ayuda (o despista) a la hora de identificar el coche. Se revisaron los 27 coches con `part:"rueda"` uno a uno, viendo la foto de cada uno.
+
+**6 tenían un problema real** y se reasignaron a otra parte bien visible y de serie en esa misma foto (con nuevas coordenadas de `focus` para apuntar al sitio correcto):
+- `c8` BMW Serie 3 (llantas doradas de aftermarket) → parrilla
+- `c17` Volvo 240 (llantas de 5 radios no originales del 240) → faro
+- `c20` Jeep Wrangler (montaje todoterreno con llantas rojas y suspensión levantada) → retrovisor
+- `c55` Nissan Micra (preparado de circuito con llantas de recambio) → retrovisor
+- `c76` GMC Yukon (la llanta casi no entraba en el encuadre de la foto) → faro
+- `c81` BMW M3 E30 (llantas de aftermarket con marca visible en el propio disco) → faro
+
+Los otros 21 se dejaron igual: llantas de fábrica o de época perfectamente razonables como pista (Fuchs del Porsche 911 clásico, Speedline del Ferrari F40, Rally del Corvette C3, etc.) — no hacía falta tocar nada solo por ser "rueda".
+
+Verificado en el navegador renderizando cada uno de los 6 en dificultad difícil y último intento (máximo zoom) para comprobar que el recorte cae de verdad sobre la parte nueva y no sobre hueco/fondo.
+
+### 22.18 Coche 101: Citroën DS
+
+A petición del usuario ("añádeme un coche más y así hay 101"), se sourceó un coche más para el modo Identificar siguiendo el mismo proceso de siempre: búsqueda en Wikimedia Commons, licencia verificada por la API antes de descargar (CC BY-SA 4.0, autor PlotagonNoah), imagen recortada/redimensionada a 1200×750 para coincidir con el resto de `assets/cars/`. Se añadió **Citroën DS (1969)** — Francia no tenía representación desde hace tiempo con un modelo tan icónico, y sus faros dobles redondos son de fábrica y clarísimamente reconocibles (parte `"faro"`), evitando de paso el problema recién arreglado en el §22.17. Total: **101 coches** en `CARS`.
+
+Verificado en el navegador: el recorte cae bien sobre los faros en dificultad difícil, y una ronda completa a mano confirmó que marca, modelo, país (Francia) y año se validan correctamente.
+
 ---
 
-*Documento generado el 11 sept. 2026, ampliado el 12 sept. 2026 con todo el trabajo de sesión: idiomas, bono de velocidad, topes de puntuación por dificultad, clasificación diaria con login (Supabase), rediseño de la clasificación estilo podio F1, iconos de menú con transparencia real, despliegue continuo en Vercel vía GitHub, el modo "Por sonido" convertido en reto diario con grabaciones reales de motor (39→60 sonidos, bug de silencio encontrado y corregido, sonido del día resuelto con tabla en Supabase para que sea aleatorio de verdad), el crédito de la grabación en pantalla, el sonido cortándose al salir de la pregunta, los controles de play/pausa/repetir con el botón de play centrado, el "un intento al día" del sonido pasado a comprobarse en el servidor (ya no se podía jugar dos veces entre aparatos), la clasificación general por modo (mejor puntuación entre las tres dificultades, sin normalizar), la puntuación de Logos escalada por dificultad (100/200/300) con bono de tiempo, igual que Identificar, el zoom de móvil pillado al usar el teclado (mismo arreglo que en la clínica veterinaria), el idioma inicial detectado del navegador (español para hispanohablantes, inglés para el resto, hasta que se elija a mano), y el mensaje de fallo de Sonido que hablaba de una imagen inexistente.*
+*Documento generado el 11 sept. 2026, ampliado el 12 sept. 2026 con todo el trabajo de sesión: idiomas, bono de velocidad, topes de puntuación por dificultad, clasificación diaria con login (Supabase), rediseño de la clasificación estilo podio F1, iconos de menú con transparencia real, despliegue continuo en Vercel vía GitHub, el modo "Por sonido" convertido en reto diario con grabaciones reales de motor (39→60 sonidos, bug de silencio encontrado y corregido, sonido del día resuelto con tabla en Supabase para que sea aleatorio de verdad), el crédito de la grabación en pantalla, el sonido cortándose al salir de la pregunta, los controles de play/pausa/repetir con el botón de play centrado, el "un intento al día" del sonido pasado a comprobarse en el servidor (ya no se podía jugar dos veces entre aparatos), la clasificación general por modo (mejor puntuación entre las tres dificultades, sin normalizar), la puntuación de Logos escalada por dificultad (100/200/300) con bono de tiempo, igual que Identificar, el zoom de móvil pillado al usar el teclado (mismo arreglo que en la clínica veterinaria), el idioma inicial detectado del navegador (español para hispanohablantes, inglés para el resto, hasta que se elija a mano), el mensaje de fallo de Sonido que hablaba de una imagen inexistente, los recortes de "llanta" con llantas no originales corregidos, y el coche 101 (Citroën DS).*
