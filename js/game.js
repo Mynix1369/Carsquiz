@@ -213,9 +213,19 @@ function renderStimulus(q){
       <button id="play-sound-btn" class="play-btn">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
       </button>
-      <p class="hint-text">${t("soundHint")}</p>`;
+      <p class="hint-text">${t("soundHint")}</p>
+      ${SOUND_TEST_MODE ? `
+        <p class="hint-text" style="color:var(--amber)">${q.car.id} — ${q.car.brand} ${q.car.model} (${q.car.year})</p>
+        <button id="test-next-sound-btn" class="btn-secondary" type="button">Siguiente sonido (prueba)</button>
+      ` : ""}`;
     area.appendChild(box);
     document.getElementById("play-sound-btn").addEventListener("click", () => playCarSound(q.car));
+    if(SOUND_TEST_MODE){
+      document.getElementById("test-next-sound-btn").addEventListener("click", () => {
+        q.car = getTodaysSoundCar();
+        renderStimulus(q);
+      });
+    }
     playCarSound(q.car);
     return;
   }
