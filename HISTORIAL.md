@@ -496,6 +496,18 @@ Bug reportado por el usuario: si reproducías el sonido del día y salías de es
 
 **Arreglo**: nueva función `stopCarSound()` en `audio.js` (pausa y resetea `currentAudioEl.currentTime`), reutilizada tanto por `playCarSound()` (antes de arrancar un clip nuevo, como ya hacía) como llamada desde `showScreen()` en `game.js` cada vez que la pantalla de destino **no** es `screen-game` — así cualquier forma de salir de la pregunta (salir al menú, terminar la ronda, lo que sea) corta el audio sin tener que acordarse de llamarlo a mano en cada sitio.
 
+### 22.10 Controles de reproducción: play/pausa/repetir, sin autoplay, botón centrado
+
+El usuario pidió dos cambios seguidos sobre el reproductor del modo sonido, hechos "poco a poco" en la misma sesión:
+
+**1. Play/pausa/repetir, sin reproducción automática al entrar.** Hasta ahora `playCarSound(car)` (en `audio.js`) creaba un `Audio` nuevo y lo reproducía inmediatamente en cuanto se entraba en la pregunta, con un único botón de "play" que no reflejaba si estaba sonando o no. Se rediseñó de raíz:
+- `audio.js` pasó de una sola función (`playCarSound`) a cuatro: `loadCarSound(car)` (prepara el clip sin reproducirlo, engancha los listeners `play`/`pause`/`ended` a un callback opcional `onAudioStateChange`), `togglePlayPauseCarSound()`, `replayCarSound()` (resetea `currentTime` a 0 y reproduce) y `stopCarSound()` (sin cambios, ver §22.9).
+- `renderStimulus()` (en `game.js`, rama de sonido) ahora monta dos botones — `#play-pause-btn` (con dos SVG superpuestos, play/pausa, alternados con la clase `.hidden` existente) y `#replay-btn` — y llama a `loadCarSound(q.car)` en vez de reproducir directamente. `onAudioStateChange` se conecta a una nueva función `updatePlayPauseIcon(state)` que alterna qué icono se ve y actualiza el `title`/`aria-label` según esté sonando, en pausa o haya terminado (evento `ended`).
+- Nuevas claves de idioma `playLabel`/`pauseLabel`/`replayLabel` (EN y ES) en `i18n.js`, usadas como accesibilidad (`title`/`aria-label`) de los botones.
+- Verificado en el navegador con lecturas directas de `currentAudioEl.paused`/`currentTime`: no suena nada al entrar (`paused:true` desde el principio), el botón de play alterna a pausa y viceversa, repetir vuelve a 0 y reproduce, y al llegar al final el icono vuelve solo a "play" (evento `ended`).
+
+**2. Centrar el botón de play, encoger y desplazar el de repetir.** El usuario notó que el conjunto de los dos botones no quedaba centrado en la caja (al estar en una fila `flex` con `gap`, el par entero se centraba, no el botón de play en concreto). Arreglado en `styles.css`: `.sound-controls` pasó a `position:relative` con el botón de play como único elemento en el flujo normal (así `justify-content:center` sí lo centra a él solo), y `.replay-btn` pasó a `position:absolute` (desplazado a la derecha del centro) y se redujo de 44px a 40px. Verificado midiendo con JS que el centro horizontal del botón de play coincide exactamente con el centro de `.sound-box`.
+
 ---
 
 ## 23. Pendientes conocidos a día de hoy (12 sept. 2026, última revisión)
@@ -508,4 +520,4 @@ Bug reportado por el usuario: si reproducías el sonido del día y salías de es
 
 ---
 
-*Documento generado el 11 sept. 2026, ampliado el 12 sept. 2026 con todo el trabajo de sesión: idiomas, bono de velocidad, topes de puntuación por dificultad, clasificación diaria con login (Supabase), rediseño de la clasificación estilo podio F1, iconos de menú con transparencia real, despliegue continuo en Vercel vía GitHub, el modo "Por sonido" convertido en reto diario con grabaciones reales de motor (39→60 sonidos, bug de silencio encontrado y corregido, sonido del día resuelto con tabla en Supabase para que sea aleatorio de verdad), el crédito de la grabación en pantalla, y el sonido cortándose al salir de la pregunta.*
+*Documento generado el 11 sept. 2026, ampliado el 12 sept. 2026 con todo el trabajo de sesión: idiomas, bono de velocidad, topes de puntuación por dificultad, clasificación diaria con login (Supabase), rediseño de la clasificación estilo podio F1, iconos de menú con transparencia real, despliegue continuo en Vercel vía GitHub, el modo "Por sonido" convertido en reto diario con grabaciones reales de motor (39→60 sonidos, bug de silencio encontrado y corregido, sonido del día resuelto con tabla en Supabase para que sea aleatorio de verdad), el crédito de la grabación en pantalla, el sonido cortándose al salir de la pregunta, y los controles de play/pausa/repetir con el botón de play centrado.*
