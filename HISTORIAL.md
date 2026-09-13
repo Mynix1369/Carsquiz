@@ -661,4 +661,56 @@ Verificado en el navegador: al hacer clic en "EN" el botón cambiaba de "Apóyan
 
 ---
 
+## 24. Revisión de seguridad completa (13 sept. 2026)
+
+El usuario pidió una revisión de seguridad a fondo, con un objetivo concreto: que nadie pudiera "hackear" la app ni falsear puntuaciones. Se hizo con pruebas reales contra Supabase en producción (usando la misma clave pública `anon` que ya lleva la app, sin iniciar sesión — exactamente lo que vería un visitante cualquiera), no solo lectura de código.
+
+### 24.1 El problema de fondo: las respuestas viajan en el propio código
+
+Como la app es HTML/JS estático sin servidor de juego propio, `data.js` contiene las respuestas correctas de los 3 modos en texto plano (visible con "ver código fuente"). Esto significa que **no existe una forma de impedir al 100% que alguien haga trampa mirando el código antes de responder** sin rehacer la arquitectura para que el servidor sea el árbitro (Edge Functions de Supabase que solo revelen la respuesta correcta después de recibir el intento, y sea el único que pueda escribir en `scores`). Se explicó esto al usuario con el coste real (proyecto de tamaño medio, no un retoque) y, dado que es un juego para jugar con amigos sin premio real, se decidió **no** acometer ese cambio grande por ahora — ver §24.5 para qué se hizo en su lugar.
+
+### 24.2 Hallazgo 1: puntuación arbitraria por consola (confirmado por código, no probado en vivo)
+
+`saveScoreIfLoggedIn()` (`game.js`) calcula la puntuación en el navegador y la manda tal cual a Supabase; la política RLS de `scores` solo comprobaba que la fila fuera del propio usuario (`user_id = auth.uid()`), no que el número tuviera sentido — cualquier jugador con cuenta real podía abrir la consola (F12) y subir un `upsert` con `score: 999999`. No se probó con una cuenta real (crear cuentas de prueba no es algo que deba hacer sin más), pero se dedujo con certeza del propio código + de las políticas documentadas en §19.2.
+
+**Arreglo aplicado** (el usuario lo ejecutó en el SQL Editor de Supabase): dos restricciones `CHECK` en la tabla `scores`:
+```sql
+alter table scores add constraint score_within_bounds check (
+  score >= 0 and score <= case
+    when mode = 'sound' then 100
+    when mode in ('identify','logo') and difficulty = 'easy' then 100
+    when mode in ('identify','logo') and difficulty = 'medium' then 200
+    when mode in ('identify','logo') and difficulty = 'hard' then 300
+    else 300
+  end
+);
+alter table scores add constraint played_on_is_today check (played_on <= current_date);
+```
+Verificado indirectamente: tras aplicarlas, `select conname, pg_get_constraintdef(oid) from pg_constraint where conrelid='scores'::regclass and contype='c'` mostró las dos junto a una `scores_mode_check` preexistente. No se pudo probar en vivo un intento real de inserción con puntuación desorbitada (haría falta una cuenta logueada), pero la restricción a nivel de base de datos se aplica a cualquier `INSERT`/`UPDATE`, venga de donde venga.
+
+**Lo que queda sin cerrar a propósito**: alguien podría seguir "haciendo trampa" reclamando siempre el máximo exacto de su dificultad (100/200/300) — indistinguible de una ronda perfecta jugada de verdad. Aceptado como los límites del modelo actual (ver §24.1).
+
+### 24.3 Hallazgo 2: cualquiera (sin cuenta) podía manipular el sonido del día para todos — confirmado en vivo
+
+Se probó insertar una fila en `daily_sound` sin sesión iniciada (`POST .../rest/v1/daily_sound` con la clave `anon`, sin token de usuario) y **funcionó** (201), incluso con una fecha futura de 2099 y un `sound_id` inventado que no existe en `SOUND_CARS`. Esto permitía a cualquier visitante, sin registrarse, adelantarse e insertar de antemano el sonido que quisiera para cualquier día futuro (o directamente romper el sonido de hoy con un id inválido, que cae al primer sonido del array como reserva, `SOUND_CARS[0]`).
+
+**Causa encontrada**: revisando Authentication → Policies en el panel de Supabase, la tabla tenía **dos políticas de INSERT activas a la vez** — una permisiva antigua (`proponer el sonido del día`, sin restricción, para `anon`+`authenticated`) y la nueva que se había añadido con restricción de fecha (`daily_sound_insert_today_only`). En Postgres/Supabase, si hay varias políticas para la misma acción, basta con que **una sola** lo permita — la vieja seguía dejando pasar cualquier cosa aunque la nueva fuera correcta.
+
+**Arreglo**: `drop policy "proponer el sonido del día" on daily_sound;`, dejando solo la política nueva (que exige `played_on = current_date` y `sound_id` con formato válido `s1`...`s60`).
+
+**Verificado en vivo, dos veces** (antes y después del `drop policy`): el mismo intento de inserción de fecha futura pasó de `201 Created` a `401 / 42501 row-level security policy` tras el arreglo, sin romper la lectura normal del sonido de hoy (`SELECT` sigue abierto a `anon`, como tiene que estar).
+
+**Nota de limpieza**: las pruebas dejaron temporalmente filas de basura en `daily_sound` (fechas de 2099 y, sin querer en una prueba, un `sound_id` inválido para el propio día de hoy) — se borraron con `DELETE` desde el SQL Editor en cuanto se detectaron, antes de que afectaran a ningún jugador real.
+
+### 24.4 Hallazgos menores, corregidos en código
+
+- **Auto-XSS en la tabla de intentos**: `renderAttemptsTable()` (`game.js`) insertaba lo que el jugador escribe en marca/modelo/país/año directamente en `innerHTML` sin escapar — quien escribiera código HTML en un campo lo vería ejecutarse en su propia pantalla (no afecta a otros jugadores, la tabla de intentos nunca se guarda ni se comparte). Arreglado con una función `escapeHtml()` nueva que usa un `<div>` intermedio (`div.textContent = str; return div.innerHTML;`) antes de insertar `h.vals[f]`. Verificado en el navegador escribiendo `<img src=x onerror=alert('XSS')>` en el campo de marca: se muestra como texto literal, sin ejecutarse ni dar error en consola.
+- **Sin cabeceras de seguridad**: no existía `vercel.json`, así que Vercel no añadía protección contra clickjacking ni otras cabeceras básicas. Se creó `vercel.json` con `X-Frame-Options: DENY`, `Content-Security-Policy: frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` y `Permissions-Policy` (bloqueando cámara/micrófono/geolocalización, que la app no usa). Deliberadamente **no** se añadió una CSP completa de `script-src` (habría hecho falta listar cada origen exacto — jsDelivr para `supabase-js`, el script de Ko-fi, Google Fonts, más el script inline de `drawKofiWidget` — con riesgo real de romper algo en producción sin poder probarlo a fondo primero); se dejó solo la protección de "no se puede incrustar esta web en un iframe ajeno", que no tiene ningún efecto secundario.
+
+### 24.5 Resumen de qué se decidió no tocar
+
+Explicado al usuario y aceptado explícitamente: la reescritura para que el servidor (Edge Functions) sea el único árbitro de las respuestas y de la puntuación **no se ha hecho** — es la única forma de cerrar del todo la trampa "leer las respuestas en el código", pero es un cambio de arquitectura grande, y de momento sigue siendo un juego para jugar con amigos sin premio real de por medio. Queda anotado aquí por si en el futuro el proyecto cambia de escala (por ejemplo, si empieza a haber algún tipo de premio o competición seria) y conviene retomarlo.
+
+---
+
 *Documento generado el 11 sept. 2026, ampliado el 12 sept. 2026 con todo el trabajo de sesión: idiomas, bono de velocidad, topes de puntuación por dificultad, clasificación diaria con login (Supabase), rediseño de la clasificación estilo podio F1, iconos de menú con transparencia real, despliegue continuo en Vercel vía GitHub, el modo "Por sonido" convertido en reto diario con grabaciones reales de motor (39→60 sonidos, bug de silencio encontrado y corregido, sonido del día resuelto con tabla en Supabase para que sea aleatorio de verdad), el crédito de la grabación en pantalla, el sonido cortándose al salir de la pregunta, los controles de play/pausa/repetir con el botón de play centrado, el "un intento al día" del sonido pasado a comprobarse en el servidor (ya no se podía jugar dos veces entre aparatos), la clasificación general por modo (mejor puntuación entre las tres dificultades, sin normalizar), la puntuación de Logos escalada por dificultad (100/200/300) con bono de tiempo, igual que Identificar, el zoom de móvil pillado al usar el teclado (mismo arreglo que en la clínica veterinaria), el idioma inicial detectado del navegador (español para hispanohablantes, inglés para el resto, hasta que se elija a mano), el mensaje de fallo de Sonido que hablaba de una imagen inexistente, los recortes de "llanta" con llantas no originales corregidos, el coche 101 (Citroën DS), el autocompletado de modelo calculado a partir de los coches reales más relleno hasta un mínimo de 10 por marca, el dominio propio carquiz.app conectado a Vercel con correo de producción vía Resend/SMTP personalizado, la puntuación que se perdía al registrarse a mitad de partida, el badge de cuenta invisible en móvil estrecho, el favicon (con el logo propio del usuario), el botón de apoyo económico vía Ko-fi, y el widget de Ko-fi siguiendo el idioma activo de la app.*
