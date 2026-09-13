@@ -99,6 +99,7 @@ const STRINGS = {
     lbError: "Couldn't load the leaderboard.",
     lbEmpty: "Nobody's played today yet. Be the first!",
     lbYouTag: "YOU",
+    supportLink: "Support the project",
   },
   es: {
     pageTitle: "Quiz de Coches",
@@ -185,6 +186,7 @@ const STRINGS = {
     lbError: "No se pudo cargar la clasificación.",
     lbEmpty: "Todavía no ha jugado nadie hoy. ¡Sé el primero!",
     lbYouTag: "TÚ",
+    supportLink: "Apoya el proyecto",
   },
 };
 

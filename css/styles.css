@@ -231,6 +231,17 @@ body{
 
 .modes-list{ display:flex; flex-direction:column; gap:12px; }
 
+.support-link{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  margin-top:16px; padding:10px 16px;
+  border:1px solid var(--line); border-radius:999px;
+  background:var(--surface-1); color:var(--text-soft);
+  font-family:var(--font-mono); font-size:0.75rem; text-decoration:none;
+  transition:border-color 0.15s, color 0.15s;
+}
+.support-link svg{ width:16px; height:16px; flex:none; }
+.support-link:hover{ border-color:var(--amber); color:var(--amber); }
+
 .mode-card{
   position:relative;
   border:1px solid var(--line);
