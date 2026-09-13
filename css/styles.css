@@ -490,6 +490,16 @@ body{
   input, select, textarea{ font-size:16px !important; }
 }
 
+/* .account-badge usa margin-right:auto para quedar pegado a la izquierda mientras el
+   selector de idioma (.lang-switch) queda a la derecha, en una sola fila. En un móvil
+   estrecho los dos juntos no caben en una línea y, al no haber wrap, el badge se sale
+   por el borde izquierdo de la pantalla — invisible del todo, no solo apretado. Con
+   flex-wrap ambos pasan a su propia línea centrada si no caben, en vez de recortarse. */
+@media (max-width: 480px){
+  .header-top-row{ flex-wrap:wrap; justify-content:center; row-gap:8px; }
+  .account-badge{ margin-right:0; }
+}
+
 /* ---------- autocompletar ---------- */
 .autocomplete{ position:relative; }
 .ac-list{
