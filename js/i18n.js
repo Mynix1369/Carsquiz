@@ -100,6 +100,7 @@ const STRINGS = {
     lbEmpty: "Nobody's played today yet. Be the first!",
     lbYouTag: "YOU",
     supportLink: "Support the project",
+    kofiButtonLabel: "Support us",
   },
   es: {
     pageTitle: "Quiz de Coches",
@@ -187,6 +188,7 @@ const STRINGS = {
     lbEmpty: "Todavía no ha jugado nadie hoy. ¡Sé el primero!",
     lbYouTag: "TÚ",
     supportLink: "Apoya el proyecto",
+    kofiButtonLabel: "Apóyanos",
   },
 };
 
@@ -283,6 +285,11 @@ function applyStaticI18n(){
   document.querySelectorAll(".lang-switch button").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.lang === currentLang);
   });
+
+  // el widget flotante de Ko-fi no tiene idiomas propios — se le vuelve a pedir que se
+  // dibuje (sin quitar el suyo del DOM) cada vez que cambia el idioma, así su texto
+  // sigue al del resto de la app en vez de quedarse fijo en el que hubiera al cargar.
+  if(typeof window.drawKofiWidget === "function") window.drawKofiWidget();
 }
 
 function setLanguage(lang){
