@@ -19,6 +19,15 @@ const state = {
 };
 
 // ---------- utilidades ----------
+// escapa texto antes de insertarlo con innerHTML: lo que escribes en marca/modelo/país/año
+// (h.vals[f] en renderAttemptsTable) es texto libre del usuario, así que sin esto alguien
+// podría escribir código HTML/script en un campo y que el navegador lo ejecutara.
+function escapeHtml(str){
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 function shuffle(arr){
   const a = [...arr];
   for(let i=a.length-1;i>0;i--){
@@ -398,7 +407,7 @@ function renderAttemptsTable(){
       return `<div class="attempt-row">
         ${fields.map(f => h ? `
           <div class="attempt-cell">
-            <span class="attempt-val ${h.correct[f] ? "ok" : "no"}"><span class="dot"></span>${h.vals[f] || "—"}</span>
+            <span class="attempt-val ${h.correct[f] ? "ok" : "no"}"><span class="dot"></span>${escapeHtml(h.vals[f]) || "—"}</span>
           </div>` : `
           <div class="attempt-cell">
             <span class="dot pending"></span>
