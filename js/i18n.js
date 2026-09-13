@@ -243,6 +243,14 @@ function translateModel(model){
   return currentLang === "en" ? (MODEL_EN[model] || model) : model;
 }
 
+// los créditos de foto/sonido (data.js) se guardan siempre como "Foto: ..." / "Sonido: ...",
+// igual que el resto de datos canónicos (ver cabecera del archivo) — solo se traduce la
+// palabra inicial para mostrar, el nombre del autor y la licencia se dejan igual en los dos idiomas.
+function translateCredit(credit){
+  if(!credit || currentLang !== "en") return credit;
+  return credit.replace(/^Foto:/, "Photo:").replace(/^Sonido:/, "Sound:");
+}
+
 function translatePart(part){
   return currentLang === "en" ? (PART_EN[part] || part) : PART_LABELS[part];
 }

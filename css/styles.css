@@ -685,3 +685,25 @@ body{
 .lb-row.podium-3 .lb-score{ color:#e3a266; border-color:rgba(227,162,102,0.35); }
 
 .lb-status{ text-align:center; color:var(--text-soft); padding:30px 0; font-size:0.85rem; }
+
+/* ---------- ancho de #app en tablet ---------- */
+/* el clamp() de #app (arriba) usa 60vw con un mínimo de 480px — en tablet en vertical
+   (~768px de ancho) 60vw ya cae por debajo de ese mínimo, así que la columna se queda
+   fija en 480px con mucho hueco a los lados, como una app de móvil estirada. Se ensancha
+   solo en ese rango concreto (no se toca el clamp de siempre para no afectar a móvil
+   real ni al aspecto ya aprobado en escritorio). */
+@media (min-width:700px) and (max-width:900px){
+  #app{ max-width:90vw; }
+}
+
+/* ---------- widget flotante de Ko-fi ---------- */
+/* lo añade el script externo de Ko-fi directamente en <body>, fuera de cualquier
+   .screen, y queda fijo en la esquina inferior izquierda con z-index alto. En móvil
+   esa esquina coincide con el botón "Comprobar"/"Siguiente" de la partida — comprobado
+   que un toque ahí abría Ko-fi en vez de responder la pregunta. Se oculta mientras
+   body.in-game está activo (ver showScreen() en game.js); el botón del menú principal
+   (.support-link) sigue disponible para donar en todo momento. */
+body.in-game .floatingchat-container-wrap,
+body.in-game .floatingchat-container-wrap-mobi{
+  display:none !important;
+}

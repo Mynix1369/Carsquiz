@@ -177,6 +177,12 @@ function showScreen(id){
   if(id !== "screen-game" && typeof stopCarSound === "function") stopCarSound();
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
+  // el widget flotante de Ko-fi vive fuera de .screen (lo añade su propio script en
+  // <body>) y queda fijo en la esquina inferior izquierda — en móvil esa esquina es
+  // justo donde cae el botón "Comprobar"/"Siguiente" de la partida, y llegaba a tapar
+  // el botón de verdad (comprobado: un toque ahí abría Ko-fi en vez de responder). Se
+  // oculta mientras se juega; el botón del menú principal sigue disponible para donar.
+  document.body.classList.toggle("in-game", id === "screen-game");
 }
 
 async function startRound(mode, difficulty){
@@ -262,7 +268,7 @@ function renderStimulus(q){
     if(q.car.credit){
       const credit = document.createElement("p");
       credit.className = "photo-credit";
-      credit.textContent = q.car.credit;
+      credit.textContent = translateCredit(q.car.credit);
       area.appendChild(credit);
     }
     updateScanMeta(q);
@@ -294,7 +300,7 @@ function renderStimulus(q){
     if(q.car.credit){
       const credit = document.createElement("p");
       credit.className = "photo-credit";
-      credit.textContent = q.car.credit;
+      credit.textContent = translateCredit(q.car.credit);
       area.appendChild(credit);
     }
     return;

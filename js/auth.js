@@ -74,10 +74,14 @@ function closeAuthModal(){
 }
 
 function updateAuthFormMode(){
+  const titleEl = document.getElementById("auth-title");
   const submitBtn = document.getElementById("btn-email-submit");
   const switchText = document.getElementById("auth-switch-text");
   const toggleBtn = document.getElementById("btn-auth-toggle");
   const usernameInput = document.getElementById("auth-username");
+  // el título del modal es el único texto que no se puede fijar con data-i18n:
+  // depende de si estás en login o en registro, así que se pone aquí a mano.
+  if(titleEl) titleEl.textContent = t(authMode === "login" ? "authTitle" : "btnSignUp");
   submitBtn.textContent = t(authMode === "login" ? "btnLogIn" : "btnSignUp");
   switchText.textContent = t(authMode === "login" ? "authNoAccount" : "authHaveAccount");
   toggleBtn.textContent = t(authMode === "login" ? "btnSwitchToSignup" : "btnSwitchToLogin");
