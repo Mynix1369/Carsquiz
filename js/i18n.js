@@ -15,7 +15,7 @@ let currentLang = localStorage.getItem("qc_lang") || detectBrowserLang();
 
 const STRINGS = {
   en: {
-    pageTitle: "Car Quiz",
+    pageTitle: "CarQuiz — Guess the car by photo, sound or logo",
     titleMain: "Car",
     titleAccent: "Quiz",
     subtitle: "Guess the car before you run out of tries",
@@ -103,7 +103,7 @@ const STRINGS = {
     kofiButtonLabel: "Support us",
   },
   es: {
-    pageTitle: "Quiz de Coches",
+    pageTitle: "CarQuiz — Adivina el coche por foto, sonido o logo",
     titleMain: "Quiz",
     titleAccent: "Coches",
     subtitle: "Adivina el coche antes de quedarte sin intentos",
