@@ -41,6 +41,7 @@ async function refreshAuthUI(){
   currentUser = session?.user || null;
   currentProfile = currentUser ? await ensureProfile(currentUser) : null;
   applyAccountBadge();
+  if(typeof resumePendingScoreSave === "function") await resumePendingScoreSave();
 }
 
 function applyAccountBadge(){

@@ -30,10 +30,51 @@ async function openLeaderboardForRound(){
 
   if(!isLoggedIn()){
     pendingScoreSave = true;
+    savePendingScoreForLater();
     openAuthModal();
     return;
   }
   await saveScoreIfLoggedIn();
+  openLeaderboard();
+}
+
+// se guarda en localStorage (no solo en la variable pendingScoreSave, que vive en
+// memoria) porque si te registras de cero, el enlace de confirmación del email abre una
+// página completamente nueva sin ningún rastro de la ronda que acabas de jugar — antes
+// eso hacía que la puntuación se perdiera sin más. Con esto, la página nueva la recupera
+// sola en cuanto detecta que ya iniciaste sesión (ver resumePendingScoreSave en auth.js).
+function savePendingScoreForLater(){
+  try {
+    localStorage.setItem("qc_pending_score", JSON.stringify({
+      mode: state.mode, difficulty: state.difficulty, score: state.score, date: todayKey(),
+    }));
+  } catch(e){}
+}
+
+// se llama al cargar la app (ver refreshAuthUI en auth.js) por si veníamos de confirmar
+// el email tras intentar guardar una puntuación: si hay algo pendiente, ya hay sesión y
+// es de hoy, se guarda y se abre la clasificación directamente con el resultado puesto.
+// De un solo uso: se borra de localStorage se consiga guardar o no, para no arrastrar
+// una puntuación vieja a un futuro inicio de sesión que no tenga nada que ver.
+async function resumePendingScoreSave(){
+  let pending;
+  try {
+    const raw = localStorage.getItem("qc_pending_score");
+    if(!raw) return;
+    localStorage.removeItem("qc_pending_score");
+    pending = JSON.parse(raw);
+  } catch(e){ return; }
+
+  if(!pending || pending.date !== todayKey() || !isLoggedIn()) return;
+
+  state.mode = pending.mode;
+  state.difficulty = pending.difficulty;
+  state.score = pending.score;
+  state.scoreSaved = false;
+  await saveScoreIfLoggedIn();
+
+  lbMode = pending.mode;
+  if(pending.mode !== "sound" && pending.difficulty) lbDiff = pending.difficulty;
   openLeaderboard();
 }
 
