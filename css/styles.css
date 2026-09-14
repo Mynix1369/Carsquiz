@@ -623,13 +623,13 @@ body{
 
 /* ---------- PANTALLA DE CLASIFICACIÓN ---------- */
 .lb-heading{ text-align:center; display:block; font-size:0.75rem; }
-.leaderboard-tabs, .leaderboard-diff-tabs{ display:flex; gap:6px; padding:14px 0 0; flex-wrap:wrap; justify-content:center; }
+.leaderboard-tabs, .leaderboard-diff-tabs, .leaderboard-period-tabs{ display:flex; gap:6px; padding:14px 0 0; flex-wrap:wrap; justify-content:center; }
 .leaderboard-diff-tabs.hidden{ display:none; }
-.lb-tab, .lb-diff{
+.lb-tab, .lb-diff, .lb-period{
   appearance:none; border:1px solid var(--line); background:var(--surface-1); color:var(--text-soft);
   border-radius:999px; padding:7px 14px; font-family:var(--font-mono); font-size:0.7rem; cursor:pointer;
 }
-.lb-tab.active, .lb-diff.active{ background:var(--amber); color:var(--bg); border-color:var(--amber); }
+.lb-tab.active, .lb-diff.active, .lb-period.active{ background:var(--amber); color:var(--bg); border-color:var(--amber); }
 .leaderboard-list{ display:flex; flex-direction:column; gap:8px; padding:18px 0 24px; }
 
 /* filas estilo parrilla de F1: barra de color a la izquierda + fondo degradado

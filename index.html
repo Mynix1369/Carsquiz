@@ -19,12 +19,12 @@
 <meta name="twitter:description" content="A free car quiz game: identify the car from a cropped photo, recognize it by its real engine sound, or guess the brand from its logo.">
 <meta name="twitter:image" content="https://carquiz.app/assets/ui/icon-512.png">
 
-<link rel="icon" type="image/png" sizes="32x32" href="assets/ui/favicon-32.png?v=61">
-<link rel="icon" type="image/png" sizes="16x16" href="assets/ui/favicon-16.png?v=61">
-<link rel="apple-touch-icon" sizes="180x180" href="assets/ui/apple-touch-icon.png?v=61">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/ui/favicon-32.png?v=62">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/ui/favicon-16.png?v=62">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/ui/apple-touch-icon.png?v=62">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
-<link rel="stylesheet" href="css/styles.css?v=61">
+<link rel="stylesheet" href="css/styles.css?v=62">
 </head>
 <body>
 
@@ -291,6 +291,11 @@
       <button class="lb-tab" data-lb-mode="sound" data-i18n="modeSoundTitle">Por sonido</button>
       <button class="lb-tab" data-lb-mode="logo" data-i18n="modeLogoTitle">Logos</button>
     </div>
+    <div class="leaderboard-period-tabs" id="leaderboard-period-tabs">
+      <button class="lb-period active" data-lb-period="day" data-i18n="periodDay">Hoy</button>
+      <button class="lb-period" data-lb-period="week" data-i18n="periodWeek">Semana</button>
+      <button class="lb-period" data-lb-period="month" data-i18n="periodMonth">Mes</button>
+    </div>
     <div class="leaderboard-diff-tabs" id="leaderboard-diff-tabs">
       <button class="lb-diff active" data-lb-diff="general" data-i18n="diffGeneral">General</button>
       <button class="lb-diff" data-lb-diff="easy" data-i18n="diffEasy">Fácil</button>
@@ -350,16 +355,16 @@
 
 </div>
 
-<script src="js/data.js?v=61"></script>
-<script src="js/i18n.js?v=61"></script>
+<script src="js/data.js?v=62"></script>
+<script src="js/i18n.js?v=62"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase-config.js?v=61"></script>
-<script src="js/auth.js?v=61"></script>
-<script src="js/leaderboard.js?v=61"></script>
-<script src="js/audio.js?v=61"></script>
-<script src="js/visuals.js?v=61"></script>
-<script src="js/autocomplete.js?v=61"></script>
-<script src="js/game.js?v=61"></script>
+<script src="js/supabase-config.js?v=62"></script>
+<script src="js/auth.js?v=62"></script>
+<script src="js/leaderboard.js?v=62"></script>
+<script src="js/audio.js?v=62"></script>
+<script src="js/visuals.js?v=62"></script>
+<script src="js/autocomplete.js?v=62"></script>
+<script src="js/game.js?v=62"></script>
 <script src="https://storage.ko-fi.com/cdn/scripts/overlay-widget.js"></script>
 <script>
   // llamar a draw() otra vez (sin quitar el div que ya haya creado) actualiza el texto

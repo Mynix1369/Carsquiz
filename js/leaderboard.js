@@ -3,7 +3,16 @@
 
 let lbMode = "identify";
 let lbDiff = "general";
+let lbPeriod = "day";  // 'day' | 'week' | 'month'
 let pendingScoreSave = false;  // true mientras se espera a que inicies sesión para guardar la ronda que acabas de jugar
+
+// la dificultad solo tiene sentido si estamos viendo "hoy": en semana/mes se suma el
+// mejor resultado de cada día jugado, cruzando dificultades, para no complicar la
+// clasificación con "¿sumo solo los días que jugué en difícil?" — igual que Por sonido,
+// que tampoco tiene dificultad, en semana/mes las pestañas de dificultad se ocultan.
+function updateDiffTabsVisibility(){
+  document.getElementById("leaderboard-diff-tabs").classList.toggle("hidden", lbMode === "sound" || lbPeriod !== "day");
+}
 
 function openLeaderboard(){
   if(!isLoggedIn()){
@@ -11,7 +20,7 @@ function openLeaderboard(){
     return;
   }
   showScreen("screen-leaderboard");
-  document.getElementById("leaderboard-diff-tabs").classList.toggle("hidden", lbMode === "sound");
+  updateDiffTabsVisibility();
   loadLeaderboard();
 }
 
@@ -25,8 +34,10 @@ async function openLeaderboardForRound(){
     lbMode = state.mode;
     if(state.mode !== "sound" && state.difficulty) lbDiff = state.difficulty;
   }
+  lbPeriod = "day"; // la ronda que acabas de jugar es de hoy, así que se abre en "Hoy"
   document.querySelectorAll(".lb-tab").forEach(b => b.classList.toggle("active", b.dataset.lbMode === lbMode));
   document.querySelectorAll(".lb-diff").forEach(b => b.classList.toggle("active", b.dataset.lbDiff === lbDiff));
+  document.querySelectorAll(".lb-period").forEach(b => b.classList.toggle("active", b.dataset.lbPeriod === lbPeriod));
 
   if(!isLoggedIn()){
     pendingScoreSave = true;
@@ -89,23 +100,29 @@ async function loadLeaderboard(){
   list.innerHTML = `<p class="lb-status">${t("lbLoading")}</p>`;
 
   const today = new Date().toISOString().slice(0, 10);
+  const isDay = lbPeriod === "day";
   // la pestaña "General" solo existe para los modos con dificultad (Identifica el
   // coche, Logos) — Por sonido no tiene dificultad, así que sus pestañas de
-  // dificultad están ocultas y siempre se trata como una única categoría.
-  const isGeneral = lbMode !== "sound" && lbDiff === "general";
+  // dificultad están ocultas y siempre se trata como una única categoría. En
+  // semana/mes las pestañas de dificultad están ocultas también (ver
+  // updateDiffTabsVisibility), así que ahí se trata siempre como "general".
+  const isGeneral = lbMode !== "sound" && (lbDiff === "general" || !isDay);
 
   let query = sb.from("scores")
-    .select("user_id, score, difficulty, profiles(display_name)")
-    .eq("mode", lbMode)
-    .eq("played_on", today);
+    .select("user_id, score, difficulty, played_on, profiles(display_name)")
+    .eq("mode", lbMode);
 
-  if(isGeneral){
-    query = query.limit(1000); // vamos a agrupar/ordenar nosotros, no la base de datos
+  if(isDay){
+    query = query.eq("played_on", today);
+    query = isGeneral
+      ? query.limit(1000) // vamos a agrupar/ordenar nosotros, no la base de datos
+      : query.eq("difficulty", lbMode === "sound" ? "none" : lbDiff).order("score", { ascending: false }).limit(10);
   } else {
-    query = query
-      .eq("difficulty", lbMode === "sound" ? "none" : lbDiff)
-      .order("score", { ascending: false })
-      .limit(10);
+    // semana = últimos 7 días (incluido hoy), mes = últimos 30 — periodo móvil, no
+    // semana/mes de calendario, así no hay que gestionar ningún "reinicio" especial.
+    const days = lbPeriod === "week" ? 7 : 30;
+    const cutoff = new Date(Date.now() - (days - 1) * 86400000).toISOString().slice(0, 10);
+    query = query.gte("played_on", cutoff).limit(3000); // siempre se agrupa en el cliente
   }
 
   const { data, error } = await query;
@@ -116,14 +133,17 @@ async function loadLeaderboard(){
     return;
   }
   if(!data || data.length === 0){
-    list.innerHTML = `<p class="lb-status">${t("lbEmpty")}</p>`;
+    list.innerHTML = `<p class="lb-status">${t(isDay ? "lbEmpty" : "lbEmptyPeriod")}</p>`;
     return;
   }
 
   let rows;
-  if(isGeneral){
-    // "General" = la mejor puntuación en bruto de cada jugador entre fácil/medio/difícil,
-    // sin ningún cálculo — si jugó varias dificultades hoy, se queda la más alta.
+  if(isDay && !isGeneral){
+    rows = data;
+  } else if(isDay && isGeneral){
+    // "General" (solo hoy) = la mejor puntuación en bruto de cada jugador entre
+    // fácil/medio/difícil, sin ningún cálculo — si jugó varias dificultades hoy,
+    // se queda la más alta.
     const bestByUser = new Map();
     data.forEach(row => {
       const prev = bestByUser.get(row.user_id);
@@ -131,7 +151,23 @@ async function loadLeaderboard(){
     });
     rows = [...bestByUser.values()].sort((a, b) => b.score - a.score).slice(0, 10);
   } else {
-    rows = data;
+    // Semana/mes = para cada jugador, la suma de su mejor puntuación de cada día que
+    // jugó dentro del periodo (cruzando dificultades si hizo falta, quedándose con la
+    // mejor de ese día). Suma a propósito, no máximo: así premia tanto jugar bien como
+    // volver varios días, que es justo el objetivo de tener una clasificación semanal.
+    const bestPerUserDay = new Map();
+    data.forEach(row => {
+      const key = row.user_id + "|" + row.played_on;
+      const prev = bestPerUserDay.get(key);
+      if(!prev || row.score > prev.score) bestPerUserDay.set(key, row);
+    });
+    const totals = new Map();
+    bestPerUserDay.forEach(row => {
+      const prev = totals.get(row.user_id);
+      if(prev){ prev.score += row.score; prev.daysPlayed++; }
+      else totals.set(row.user_id, { user_id: row.user_id, score: row.score, profiles: row.profiles, daysPlayed: 1 });
+    });
+    rows = [...totals.values()].sort((a, b) => b.score - a.score).slice(0, 10);
   }
 
   list.innerHTML = rows.map((row, i) => {
@@ -139,12 +175,14 @@ async function loadLeaderboard(){
     const isMe = row.user_id === currentUser?.id;
     const podiumClass = rank <= 3 ? `podium-${rank}` : "";
     const scoreLabel = `${row.score} pts`;
-    const diffKey = "diff" + row.difficulty.charAt(0).toUpperCase() + row.difficulty.slice(1);
-    const diffTag = isGeneral ? `<span class="lb-diff-tag">${t(diffKey)}</span>` : "";
+    const diffTag = (isDay && isGeneral && row.difficulty)
+      ? `<span class="lb-diff-tag">${t("diff" + row.difficulty.charAt(0).toUpperCase() + row.difficulty.slice(1))}</span>` : "";
+    const daysTag = row.daysPlayed
+      ? `<span class="lb-diff-tag">${t(row.daysPlayed === 1 ? "lbDayPlayed" : "lbDaysPlayed", { n: row.daysPlayed })}</span>` : "";
     return `
     <div class="lb-row ${podiumClass} ${isMe ? "me" : ""}">
       <span class="lb-rank">${rank}</span>
-      <span class="lb-name">${row.profiles?.display_name || "?"}${isMe ? `<span class="lb-me-tag">${t("lbYouTag")}</span>` : ""}${diffTag}</span>
+      <span class="lb-name">${row.profiles?.display_name || "?"}${isMe ? `<span class="lb-me-tag">${t("lbYouTag")}</span>` : ""}${diffTag}${daysTag}</span>
       <span class="lb-score">${scoreLabel}</span>
     </div>`;
   }).join("");
@@ -161,7 +199,17 @@ document.addEventListener("DOMContentLoaded", () => {
       document.querySelectorAll(".lb-tab").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
       lbMode = btn.dataset.lbMode;
-      document.getElementById("leaderboard-diff-tabs").classList.toggle("hidden", lbMode === "sound");
+      updateDiffTabsVisibility();
+      loadLeaderboard();
+    });
+  });
+
+  document.querySelectorAll(".lb-period").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".lb-period").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      lbPeriod = btn.dataset.lbPeriod;
+      updateDiffTabsVisibility();
       loadLeaderboard();
     });
   });
