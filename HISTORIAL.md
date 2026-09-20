@@ -788,4 +788,26 @@ Verificado en el navegador simulando datos con `sb.from` sustituido (sin tocar l
 
 ---
 
+## 29. Favicon de 96x96 para que Google lo enseñe en resultados de búsqueda
+
+El usuario notó que el resultado de carquiz.app en Google no mostraba ningún icono junto al nombre del sitio (salía un globo genérico). Causa probable: Google recomienda que el favicon tenga un tamaño múltiplo de 48px para poder usarlo en resultados de búsqueda, y los únicos que había (`favicon-16.png`, `favicon-32.png`, del trabajo de favicon del §22.23) no cumplían eso.
+
+**Arreglo**: se generó `assets/ui/favicon-96.png` (96×96) a partir del logo del usuario (`icon-512.png`, ya existente) usando `sharp` instalado al vuelo en una carpeta temporal (mismo patrón puntual que en sesiones anteriores para tareas de imagen — no queda instalado en el proyecto). Se añadió como `<link rel="icon" sizes="96x96">` adicional en `index.html`, sin tocar los de 16/32 que sigue usando la pestaña del navegador.
+
+Se le explicó al usuario que esto tampoco es instantáneo: aunque el título y la descripción ya se habían indexado bien, el icono de búsqueda de Google suele ir varios días por detrás incluso después del arreglo.
+
+---
+
+## 30. Bug: 9 marcas salían duplicadas en Logos (Bugatti y otras 8)
+
+El usuario reportó ver "Bugatti" dos veces en la lista del juego (concretamente, en el autocompletado del modo Logos). Investigado y confirmado con un script rápido en Node cargando `data.js`: **no era solo Bugatti, eran 9 marcas** — Vauxhall, Lotus, McLaren, Bugatti, Koenigsegg, Pagani, Morgan, Alpine y De Tomaso.
+
+**Causa raíz**: cuando se creó `LOGO_ONLY_BRANDS` (§5.2), esas 9 marcas se incluyeron a propósito porque en aquel momento `BRANDS` solo salía de `CARS` (Identificar) y estas marcas ya se querían usar también en Sonido (el propio comentario del código lo explicaba: "el reto diario incluye fabricantes como Bugatti, Koenigsegg o Alpine que Identificar todavía no tiene"). Pero **§22.19 cambió `BRANDS` para que saliera de `CARS` + `SOUND_CARS`** (arreglo del bug de autocompletado de modelos) — desde ese cambio, esas 9 marcas ya entraban solas en `BRANDS` a través de `SOUND_CARS`, así que al construir `LOGO_BRANDS = [...BRANDS, ...LOGO_ONLY_BRANDS]` quedaban contadas dos veces. Un efecto secundario no detectado en su momento de un cambio de hace semanas, no un fallo introducido ahora.
+
+**Arreglo**: se quitaron esas 9 marcas de `LOGO_ONLY_BRANDS` (ya no hace falta tenerlas ahí, `BRANDS` las trae solas) y se actualizó el comentario del array para explicar la regla de mantenimiento: si una marca de `LOGO_ONLY_BRANDS` gana un coche o sonido real más adelante, hay que quitarla de esa lista o vuelve a duplicarse.
+
+Verificado con un script en Node y en el navegador: `LOGO_BRANDS` vuelve a tener exactamente 100 elementos, los 100 distintos, las 100 con dificultad asignada en `LOGO_DIFFICULTY` y con archivo de logo en `LOGO_FILE_BY_BRAND` — y visualmente, escribir "Bug" en el autocompletado de Logos ahora sugiere "Bugatti" una sola vez.
+
+---
+
 *Documento generado el 11 sept. 2026, ampliado el 12 sept. 2026 con todo el trabajo de sesión: idiomas, bono de velocidad, topes de puntuación por dificultad, clasificación diaria con login (Supabase), rediseño de la clasificación estilo podio F1, iconos de menú con transparencia real, despliegue continuo en Vercel vía GitHub, el modo "Por sonido" convertido en reto diario con grabaciones reales de motor (39→60 sonidos, bug de silencio encontrado y corregido, sonido del día resuelto con tabla en Supabase para que sea aleatorio de verdad), el crédito de la grabación en pantalla, el sonido cortándose al salir de la pregunta, los controles de play/pausa/repetir con el botón de play centrado, el "un intento al día" del sonido pasado a comprobarse en el servidor (ya no se podía jugar dos veces entre aparatos), la clasificación general por modo (mejor puntuación entre las tres dificultades, sin normalizar), la puntuación de Logos escalada por dificultad (100/200/300) con bono de tiempo, igual que Identificar, el zoom de móvil pillado al usar el teclado (mismo arreglo que en la clínica veterinaria), el idioma inicial detectado del navegador (español para hispanohablantes, inglés para el resto, hasta que se elija a mano), el mensaje de fallo de Sonido que hablaba de una imagen inexistente, los recortes de "llanta" con llantas no originales corregidos, el coche 101 (Citroën DS), el autocompletado de modelo calculado a partir de los coches reales más relleno hasta un mínimo de 10 por marca, el dominio propio carquiz.app conectado a Vercel con correo de producción vía Resend/SMTP personalizado, la puntuación que se perdía al registrarse a mitad de partida, el badge de cuenta invisible en móvil estrecho, el favicon (con el logo propio del usuario), el botón de apoyo económico vía Ko-fi, y el widget de Ko-fi siguiendo el idioma activo de la app.*
