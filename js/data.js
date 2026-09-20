@@ -8,17 +8,19 @@ function normalize(str){
 }
 
 // marcas adicionales que solo aparecen en el modo "Logos" (no tienen fotos de coche,
-// así que no forman parte de CARS) — algunas sí se usan también en Sonido (a través
-// de LOGO_BRANDS, más abajo, en el campo de marca), porque el reto diario incluye
-// fabricantes como Bugatti, Koenigsegg o Alpine que Identificar todavía no tiene.
+// así que no forman parte de CARS, ni sonido real, así que tampoco están en SOUND_CARS).
+// Importante: si una marca de aquí acaba ganando un coche o un sonido real más adelante,
+// hay que quitarla de esta lista — si no, sale duplicada en LOGO_BRANDS (BRANDS ya la
+// incluye automáticamente a través de CARS/SOUND_CARS, ver más abajo). Esto es justo lo
+// que pasó con Vauxhall/Lotus/McLaren/Bugatti/Koenigsegg/Pagani/Morgan/Alpine/De Tomaso
+// tras la ampliación de sonidos del §22.6: se quitaron de aquí al detectarse el duplicado.
 const LOGO_ONLY_BRANDS = [
   "Isuzu", "Daihatsu", "Genesis", "Infiniti", "Acura", "Datsun", "Scion", "SsangYong",
   "Great Wall", "Haval", "BYD", "Geely", "MG", "Chery", "Tata", "Mahindra",
-  "Proton", "Lada", "Dacia", "Smart", "Vauxhall", "Lotus", "McLaren", "Bugatti",
-  "Koenigsegg", "Pagani", "TVR", "Morgan", "Caterham", "Abarth", "Alpine", "DS",
+  "Proton", "Lada", "Dacia", "Smart", "TVR", "Caterham", "Abarth", "DS",
   "Lincoln", "Pontiac", "Oldsmobile", "Plymouth", "Hummer", "Saturn", "Ram", "DeLorean",
   "Studebaker", "Trabant", "Simca", "Autobianchi", "Holden", "Daewoo", "UAZ", "Innocenti",
-  "De Tomaso", "Spyker", "Wiesmann", "Borgward", "NSU", "Rover", "Zastava", "Talbot"
+  "Spyker", "Wiesmann", "Borgward", "NSU", "Rover", "Zastava", "Talbot"
 ];
 
 // dificultad del modo "Logos": fácil = el nombre de la marca aparece en el propio logo;
